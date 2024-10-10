@@ -9,14 +9,9 @@ members = ["crates/*"]
 [workspace.dependencies]
 anyhow = "1.0.89"
 crossterm = {version = "0.28.1", default-features = false, features = ["events"]}
-ratatui = "0.28.1"
-reqwest = { version = "0.12.8", default-features = false }
-serde = { version = "1.0.210", default-features = false }
-serde_json = { version = "1.0.128", default-features = false }
 tokio = { version = "1.40.0", default-features = false }
 redox_api = { path = "./crates/api", version = "0.1.0" }
 redox_tui = { path = "./crates/tui", version = "0.1.0 "}
-tracing = "0.1.40"
 
 [dependencies]
 anyhow = { workspace = true }
