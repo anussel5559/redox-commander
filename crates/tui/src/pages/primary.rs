@@ -1,12 +1,14 @@
 use tuirealm::{
     tui::layout::{Constraint, Direction, Layout, Rect},
-    State,
+    State, Sub, SubClause, SubEventClause,
 };
+
+use crate::UserEvent;
 
 use super::{Id, Mount, Page, Render};
 
 mod components;
-use components::Deployment;
+use components::{Deployment, Environment, Organization};
 
 pub struct PrimaryPage;
 
@@ -15,17 +17,20 @@ impl Page for PrimaryPage {
         vec![
             Mount {
                 id: Id::Deployment,
-                component: Box::new(Deployment::new().set_value(Some("Candi".into()))),
-                subs: vec![],
+                component: Box::new(Deployment::new()),
+                subs: vec![Sub::new(
+                    SubEventClause::User(UserEvent::SetCurrentDeployment(String::default())),
+                    SubClause::Always,
+                )],
             },
             Mount {
                 id: Id::Organization,
-                component: Box::new(Deployment::new().set_value(Some("6942".into()))),
+                component: Box::new(Organization::new()),
                 subs: vec![],
             },
             Mount {
                 id: Id::Environment,
-                component: Box::new(Deployment::new().set_value(Some("Staging".into()))),
+                component: Box::new(Environment::new()),
                 subs: vec![],
             },
         ]

@@ -8,11 +8,11 @@ use crate::{Id, Msg, UserEvent};
 
 /// Deployment block
 #[derive(MockComponent)]
-pub struct Deployment {
+pub struct Environment {
     component: FocusableParagraph,
 }
 
-impl Deployment {
+impl Environment {
     pub fn new() -> Self {
         Self {
             component: FocusableParagraph::default()
@@ -22,7 +22,7 @@ impl Deployment {
                         .color(Color::LightGreen),
                 )
                 .foreground(Color::LightGreen)
-                .title("Deployment", Alignment::Left)
+                .title("Environment", Alignment::Left)
                 .text_modifiers(TextModifiers::BOLD)
                 .text_alignment(Alignment::Center),
         }
@@ -37,13 +37,13 @@ impl Deployment {
     }
 }
 
-impl Component<Msg, UserEvent> for Deployment {
+impl Component<Msg, UserEvent> for Environment {
     fn on(&mut self, ev: Event<UserEvent>) -> Option<Msg> {
         let cmd = match ev {
             Event::Keyboard(KeyEvent {
                 code: Key::Enter, ..
             }) => Cmd::None,
-            Event::User(UserEvent::SetCurrentDeployment(dep)) => {
+            Event::User(UserEvent::SetCurrentEnvironment(dep)) => {
                 self.set_value(Some(dep));
                 Cmd::None
             }

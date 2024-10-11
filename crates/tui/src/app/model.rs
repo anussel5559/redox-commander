@@ -129,9 +129,8 @@ impl Update<Msg> for Model {
                 }
                 Msg::Clock => None,
                 Msg::None => None,
-                Msg::OpenModal => None,
-                Msg::SetModalStatus(val) => {
-                    self.event_queue.push(UserEvent::ModalChanged(val));
+                Msg::OpenModal => {
+                    self.event_queue.push(UserEvent::ModalChanged(true));
                     None
                 }
                 Msg::SetActive(id) => {
