@@ -11,13 +11,15 @@ Hide
 Type "cargo build --release"
 Enter
 Sleep 2s
-Type "cp target/release/redox_commander ~/bin"
+Type "cp target/release/rc ~/bin"
 Enter
 Type "clear"
 Enter
 Show
 
-Type@75ms "redox_commander"
+Sleep 500ms
+Type@75ms "rc"
+Sleep 700ms
 Enter
 Sleep 1s
 Type "d"

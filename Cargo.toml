@@ -3,6 +3,12 @@ name = "redox_commander"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "rc"
+test = false
+bench = false
+path = "src/main.rs"
+
 [workspace]
 members = ["crates/*"]
 
