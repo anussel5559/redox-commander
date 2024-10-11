@@ -22,7 +22,7 @@ impl Environment {
                         .color(Color::LightGreen),
                 )
                 .foreground(Color::LightGreen)
-                .title("Environment", Alignment::Left)
+                .title("Environment (e)", Alignment::Left)
                 .text_modifiers(TextModifiers::BOLD)
                 .text_alignment(Alignment::Center),
         }

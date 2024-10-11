@@ -1,6 +1,5 @@
-use tui_realm_stdlib::Span;
 use tuirealm::command::{Cmd, CmdResult};
-use tuirealm::props::{Alignment, BorderSides, Borders, Color, Style, TextModifiers, TextSpan};
+use tuirealm::props::{Alignment, BorderSides, Borders, Color, Style, TextModifiers};
 use tuirealm::tui::layout::Rect;
 use tuirealm::tui::text::Text;
 use tuirealm::tui::widgets::{Block, Paragraph};

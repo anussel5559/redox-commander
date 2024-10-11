@@ -1,4 +1,7 @@
-use std::io::{self};
+use std::{
+    io::{self},
+    path::PathBuf,
+};
 
 use anyhow::Result;
 
@@ -12,15 +15,15 @@ use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use tuirealm::{
-    tui::prelude::CrosstermBackend, AttrValue, Attribute, PollStrategy, Terminal, Update,
-};
+use redox_core::ConfigurationFile;
+use tuirealm::{tui::prelude::CrosstermBackend, AttrValue, Attribute, PollStrategy, Terminal};
 
 #[derive(Debug, PartialEq)]
 pub enum Msg {
     AppClose,
     Clock,
     SetActive(Id),
+    LoadConfiguration,
     OpenModal,
     None,
 }
@@ -57,9 +60,11 @@ impl PartialEq for UserEvent {
 pub struct Tui {}
 
 impl Tui {
-    pub async fn start() -> Result<()> {
+    pub async fn start(collection_path: Option<PathBuf>) -> Result<()> {
+        let configuration_path = ConfigurationFile::try_path(None, collection_path)?;
         let term = initialize_terminal()?;
-        let mut model = Model::new(term);
+
+        let mut model = Model::new(term, configuration_path);
 
         while !model.quit {
             // Tick
@@ -74,17 +79,21 @@ impl Tui {
                         )
                         .is_ok());
                 }
-                Ok(messages) if messages.len() > 0 => {
-                    // NOTE: redraw if at least one msg has been processed
-                    model.redraw = true;
-                    for msg in messages.into_iter() {
-                        let mut msg = Some(msg);
-                        while msg.is_some() {
-                            msg = model.update(msg);
+                Ok(mut messages) => {
+                    if model.model_state.configuration.is_none() {
+                        messages.push(Msg::LoadConfiguration);
+                    }
+                    if messages.len() > 0 {
+                        // NOTE: redraw if at least one msg has been processed
+                        model.redraw = true;
+                        for msg in messages.into_iter() {
+                            let mut msg = Some(msg);
+                            while msg.is_some() {
+                                msg = model.update(msg).await;
+                            }
                         }
                     }
                 }
-                _ => {}
             }
             // Redraw
             if model.redraw {

@@ -1,3 +1,4 @@
+use app::model::ModelState;
 use tuirealm::{tui::layout::Rect, Component, State, Sub};
 
 pub use super::*;
@@ -14,9 +15,14 @@ pub struct Mount {
 }
 
 pub trait Page {
-    fn mount(&self) -> Vec<Mount>;
+    fn mount(&self, model_state: &ModelState) -> Vec<Mount>;
     fn required_states(&self) -> Vec<Id>;
-    fn view(&self, area: Rect, states: &std::collections::HashMap<Id, State>) -> Vec<Render>;
+    fn view(
+        &self,
+        area: Rect,
+        states: &std::collections::HashMap<Id, State>,
+        model_state: &ModelState,
+    ) -> Vec<Render>;
 }
 
 mod primary;

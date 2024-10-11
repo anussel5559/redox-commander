@@ -22,7 +22,7 @@ impl Organization {
                         .color(Color::LightGreen),
                 )
                 .foreground(Color::LightGreen)
-                .title("Organization", Alignment::Left)
+                .title("Organization (o)", Alignment::Left)
                 .text_modifiers(TextModifiers::BOLD)
                 .text_alignment(Alignment::Center),
         }

@@ -5,7 +5,7 @@ use tuirealm::{
 
 use crate::UserEvent;
 
-use super::{Id, Mount, Page, Render};
+use super::{app::model::ModelState, Id, Mount, Page, Render};
 
 mod components;
 use components::{Deployment, Environment, Organization};
@@ -13,11 +13,17 @@ use components::{Deployment, Environment, Organization};
 pub struct PrimaryPage;
 
 impl Page for PrimaryPage {
-    fn mount(&self) -> Vec<Mount> {
+    fn mount(&self, model_state: &ModelState) -> Vec<Mount> {
+        let mut deployment = Deployment::new();
+
+        if let Some(cur_deployment) = &model_state.current_deployment {
+            deployment.set_value(Some(cur_deployment.name.clone()));
+        }
+
         vec![
             Mount {
                 id: Id::Deployment,
-                component: Box::new(Deployment::new()),
+                component: Box::new(deployment),
                 subs: vec![Sub::new(
                     SubEventClause::User(UserEvent::SetCurrentDeployment(String::default())),
                     SubClause::Always,
@@ -40,7 +46,12 @@ impl Page for PrimaryPage {
         vec![]
     }
 
-    fn view(&self, area: Rect, _states: &std::collections::HashMap<Id, State>) -> Vec<Render> {
+    fn view(
+        &self,
+        area: Rect,
+        _states: &std::collections::HashMap<Id, State>,
+        _model_state: &ModelState,
+    ) -> Vec<Render> {
         let [header, _body] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Length(3), Constraint::Min(0)])

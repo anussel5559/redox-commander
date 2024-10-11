@@ -1,14 +1,16 @@
 use std::{
     collections::HashMap,
+    path::PathBuf,
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
 };
 
+use redox_core::{Configuration, ConfigurationFile, Deployment};
 use tuirealm::{
     listener::{ListenerResult, Poll},
     props::{Alignment, Color, TextModifiers},
     tui::layout::{Constraint, Direction, Flex, Layout},
-    Application, AttrValue, Attribute, Event, EventListenerCfg, Terminal, Update,
+    Application, AttrValue, Attribute, Event, EventListenerCfg, Terminal,
 };
 
 use crate::{
@@ -16,6 +18,23 @@ use crate::{
     pages::{Page, PrimaryPage},
     Id, Msg, UserEvent,
 };
+
+#[derive(Debug)]
+pub struct ModelState {
+    configuration_path: PathBuf,
+    pub configuration: Option<Configuration>,
+    pub current_deployment: Option<Deployment>,
+}
+
+impl ModelState {
+    fn new(configuration_path: PathBuf) -> Self {
+        Self {
+            configuration_path,
+            configuration: None,
+            current_deployment: None,
+        }
+    }
+}
 
 pub struct Model {
     /// Application
@@ -30,19 +49,27 @@ pub struct Model {
     pub cur_page: Box<dyn Page>,
     // internal event queue for user events
     pub event_queue: InternalEventQueue,
+    // model state, tracks a few important cross-cutting values
+    pub model_state: ModelState,
 }
 
 impl Model {
-    pub fn new(terminal: Terminal) -> Self {
+    pub fn new(terminal: Terminal, configuration_path: PathBuf) -> Self {
         let cur_page = Box::new(PrimaryPage);
         let event_queue = InternalEventQueue::new();
+        let init_model_state = ModelState::new(configuration_path);
         Self {
-            app: Self::init_app(Box::new(PrimaryPage), event_queue.clone()),
+            app: Self::init_app(
+                Box::new(PrimaryPage),
+                event_queue.clone(),
+                &init_model_state,
+            ),
             quit: false,
             redraw: true,
             terminal,
             cur_page,
             event_queue,
+            model_state: init_model_state,
         }
     }
 
@@ -70,7 +97,7 @@ impl Model {
 
                 self.app.view(&Id::Clock, f, clock_area);
                 self.cur_page
-                    .view(body, &states)
+                    .view(body, &states, &self.model_state)
                     .into_iter()
                     .for_each(|render| {
                         self.app.view(&render.id, f, render.area);
@@ -82,6 +109,7 @@ impl Model {
     pub fn init_app(
         initial_page: Box<dyn Page>,
         user_queue: InternalEventQueue,
+        init_model_state: &ModelState,
     ) -> Application<Id, Msg, UserEvent> {
         let mut app: Application<Id, Msg, UserEvent> = Application::init(
             EventListenerCfg::default()
@@ -110,15 +138,36 @@ impl Model {
                 Clock::get_subs()
             )
             .is_ok());
-        initial_page.mount().into_iter().for_each(|mount| {
-            assert!(app.mount(mount.id, mount.component, mount.subs).is_ok());
-        });
+        initial_page
+            .mount(init_model_state)
+            .into_iter()
+            .for_each(|mount| {
+                assert!(app.mount(mount.id, mount.component, mount.subs).is_ok());
+            });
         app
     }
-}
 
-impl Update<Msg> for Model {
-    fn update(&mut self, msg: Option<Msg>) -> Option<Msg> {
+    async fn load_configuration(&mut self) {
+        let configuration_file =
+            ConfigurationFile::load(self.model_state.configuration_path.clone())
+                .await
+                .unwrap_or_else(|_| {
+                    ConfigurationFile::with_path(self.model_state.configuration_path.clone())
+                });
+        // If the configuration has a deployment with default, trigger that user event
+        if let Some(deployment) = configuration_file
+            .configuration
+            .deployments
+            .iter()
+            .find(|d| d.default == Some(true))
+        {
+            self.event_queue
+                .push(UserEvent::SetCurrentDeployment(deployment.name.clone()));
+        }
+        self.model_state.configuration = Some(configuration_file.configuration);
+    }
+
+    pub async fn update(&mut self, msg: Option<Msg>) -> Option<Msg> {
         if let Some(msg) = msg {
             // Set redraw
             self.redraw = true;
@@ -138,6 +187,10 @@ impl Update<Msg> for Model {
                     if cur_focus == None || cur_focus == Some(AttrValue::Flag(false)) {
                         self.app.active(&id).ok();
                     }
+                    None
+                }
+                Msg::LoadConfiguration => {
+                    self.load_configuration().await;
                     None
                 }
             }

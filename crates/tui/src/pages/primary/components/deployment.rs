@@ -22,7 +22,7 @@ impl Deployment {
                         .color(Color::LightGreen),
                 )
                 .foreground(Color::LightGreen)
-                .title("Deployment", Alignment::Left)
+                .title("Deployment (d)", Alignment::Left)
                 .text_modifiers(TextModifiers::BOLD)
                 .text_alignment(Alignment::Center),
         }

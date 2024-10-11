@@ -6,6 +6,6 @@ use std::process::ExitCode;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<ExitCode> {
-    Tui::start().await?;
+    Tui::start(None).await?;
     Ok(ExitCode::SUCCESS)
 }
