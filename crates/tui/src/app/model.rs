@@ -1,15 +1,18 @@
 use std::{
+    collections::HashMap,
     sync::{Arc, Mutex},
-    time::Duration,
+    time::{Duration, SystemTime},
 };
 
 use tuirealm::{
     listener::{ListenerResult, Poll},
+    props::{Alignment, Color, TextModifiers},
+    tui::layout::{Constraint, Direction, Flex, Layout},
     Application, AttrValue, Attribute, Event, EventListenerCfg, Terminal, Update,
 };
 
 use crate::{
-    components::GlobalListener,
+    components::{Clock, GlobalListener},
     pages::{Page, PrimaryPage},
     Id, Msg, UserEvent,
 };
@@ -44,10 +47,34 @@ impl Model {
     }
 
     pub fn view(&mut self) {
+        let required_states = self.cur_page.required_states();
+        let mut states = HashMap::new();
+
+        for id in required_states {
+            if let Ok(state) = self.app.state(&id) {
+                states.insert(id, state);
+            }
+        }
         assert!(self
             .terminal
             .draw(|f| {
-                self.cur_page.view(&mut self.app, f);
+                let [header, body] = Layout::default()
+                    .direction(Direction::Vertical)
+                    .margin(1)
+                    .constraints([Constraint::Length(1), Constraint::Min(0)])
+                    .areas(f.size());
+
+                let [clock_area] = Layout::horizontal([Constraint::Length(8)])
+                    .flex(Flex::End)
+                    .areas(header);
+
+                self.app.view(&Id::Clock, f, clock_area);
+                self.cur_page
+                    .view(body, &states)
+                    .into_iter()
+                    .for_each(|render| {
+                        self.app.view(&render.id, f, render.area);
+                    });
             })
             .is_ok());
     }
@@ -70,7 +97,22 @@ impl Model {
                 GlobalListener::get_subs()
             )
             .is_ok());
-        initial_page.mount(&mut app);
+        assert!(app
+            .mount(
+                Id::Clock,
+                Box::new(
+                    Clock::new(SystemTime::now())
+                        .alignment(Alignment::Center)
+                        .background(Color::Reset)
+                        .foreground(Color::Cyan)
+                        .modifiers(TextModifiers::DIM)
+                ),
+                Clock::get_subs()
+            )
+            .is_ok());
+        initial_page.mount().into_iter().for_each(|mount| {
+            assert!(app.mount(mount.id, mount.component, mount.subs).is_ok());
+        });
         app
     }
 }
@@ -87,7 +129,7 @@ impl Update<Msg> for Model {
                 }
                 Msg::Clock => None,
                 Msg::None => None,
-                Msg::OpenDeploymentModal => None,
+                Msg::OpenModal => None,
                 Msg::SetModalStatus(val) => {
                     self.event_queue.push(UserEvent::ModalChanged(val));
                     None

@@ -114,10 +114,10 @@ impl Component<Msg, UserEvent> for GlobalListener {
                 return Some(Msg::SetActive(Id::Deployment))
             }
             Event::Keyboard(Self::KEY_EVENT_ORG_FOCUS) => {
-                return Some(Msg::SetActive(Id::SelectAlfa))
+                return Some(Msg::SetActive(Id::Organization))
             }
             Event::Keyboard(Self::KEY_EVENT_ENV_FOCUS) => {
-                return Some(Msg::SetActive(Id::SelectBeta))
+                return Some(Msg::SetActive(Id::Environment))
             }
             Event::User(UserEvent::ModalChanged(val)) => {
                 self.states.set_modal_state(val);

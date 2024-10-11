@@ -1,12 +1,12 @@
 use tuirealm::command::Cmd;
 use tuirealm::event::{Key, KeyEvent};
 use tuirealm::props::{Alignment, BorderType, Borders, Color, TextModifiers};
-use tuirealm::{Component, Event, MockComponent, Sub, SubClause, SubEventClause};
+use tuirealm::{Component, Event, MockComponent, Sub};
 
 use crate::mock_components::FocusableParagraph;
 use crate::{Id, Msg, UserEvent};
 
-/// Simple clock component which displays current time
+/// Deployment block
 #[derive(MockComponent)]
 pub struct Deployment {
     component: FocusableParagraph,
@@ -24,12 +24,12 @@ impl Deployment {
                 .foreground(Color::LightGreen)
                 .title("Deployment", Alignment::Left)
                 .text_modifiers(TextModifiers::BOLD)
-                .text_alignment(Alignment::Center)
+                .text_alignment(Alignment::Center),
         }
     }
 
     pub fn get_subs() -> Vec<Sub<Id, UserEvent>> {
-        vec![Sub::new(SubEventClause::Tick, SubClause::Always)]
+        vec![]
     }
 
     pub fn set_value(mut self, val: Option<String>) -> Self {

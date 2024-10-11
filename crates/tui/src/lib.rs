@@ -22,7 +22,7 @@ pub enum Msg {
     Clock,
     SetActive(Id),
     SetModalStatus(bool),
-    OpenDeploymentModal,
+    OpenModal,
     None,
 }
 
@@ -31,8 +31,6 @@ pub enum Id {
     Clock,
     Label,
     Listener,
-    SelectAlfa,
-    SelectBeta,
     Deployment,
     Organization,
     Environment,
