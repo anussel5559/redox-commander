@@ -52,14 +52,16 @@ impl Component<Msg, UserEvent> for SelectAlfa {
                 code: Key::Enter, ..
             }) => {
                 self.perform(Cmd::Submit);
-                return Some(Msg::SetModalStatus(self.component.states.tab_open));
+                Cmd::None
+                //return Some(Msg::SetModalStatus(self.component.states.tab_open));
             }
             Event::Keyboard(KeyEvent {
                 code: Key::Delete | Key::Backspace | Key::Esc,
                 ..
             }) => {
                 self.perform(Cmd::Cancel);
-                return Some(Msg::SetModalStatus(self.component.states.tab_open));
+                Cmd::None
+                //return Some(Msg::SetModalStatus(self.component.states.tab_open));
             }
             _ => Cmd::None,
         };
@@ -109,14 +111,16 @@ impl Component<Msg, UserEvent> for SelectBeta {
                 code: Key::Enter, ..
             }) => {
                 self.perform(Cmd::Submit);
-                return Some(Msg::SetModalStatus(self.component.states.tab_open));
+                Cmd::None
+                //return Some(Msg::SetModalStatus(self.component.states.tab_open));
             }
             Event::Keyboard(KeyEvent {
                 code: Key::Delete | Key::Backspace | Key::Esc,
                 ..
             }) => {
                 self.perform(Cmd::Cancel);
-                return Some(Msg::SetModalStatus(self.component.states.tab_open));
+                Cmd::None
+                //return Some(Msg::SetModalStatus(self.component.states.tab_open));
             }
             _ => Cmd::None,
         };

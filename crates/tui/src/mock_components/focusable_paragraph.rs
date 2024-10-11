@@ -1,6 +1,8 @@
+use tui_realm_stdlib::Span;
 use tuirealm::command::{Cmd, CmdResult};
-use tuirealm::props::{Alignment, BorderSides, Borders, Color, Style, TextModifiers};
+use tuirealm::props::{Alignment, BorderSides, Borders, Color, Style, TextModifiers, TextSpan};
 use tuirealm::tui::layout::Rect;
+use tuirealm::tui::text::Text;
 use tuirealm::tui::widgets::{Block, Paragraph};
 use tuirealm::{AttrValue, Attribute, Frame, MockComponent, Props, State, StateValue};
 
@@ -63,7 +65,7 @@ impl FocusableParagraph {
     pub fn get_value(&self) -> String {
         match self.states.value {
             Some(ref v) => v.clone(),
-            None => String::default(),
+            None => "none".into(),
         }
     }
 }
@@ -122,11 +124,16 @@ impl MockComponent for FocusableParagraph {
             Some((text, alignment)) => block.title(text).title_alignment(alignment),
             None => block,
         };
-        let selected_text: String = self.get_value();
 
-        let p: Paragraph = Paragraph::new(selected_text)
-            .style(style.add_modifier(text_modifiers))
+        let selected_text: String = self.get_value();
+        let mut text_style = style.clone().add_modifier(text_modifiers);
+        if self.states.value == None {
+            text_style = text_style.add_modifier(TextModifiers::DIM);
+        }
+
+        let p: Paragraph = Paragraph::new(Text::styled(selected_text, text_style))
             .block(block)
+            .style(style)
             .alignment(text_alignment);
         frame.render_widget(p, area);
     }

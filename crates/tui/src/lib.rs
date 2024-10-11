@@ -21,8 +21,7 @@ pub enum Msg {
     AppClose,
     Clock,
     SetActive(Id),
-    SetModalStatus(bool),
-    OpenDeploymentModal,
+    OpenModal,
     None,
 }
 
@@ -31,8 +30,6 @@ pub enum Id {
     Clock,
     Label,
     Listener,
-    SelectAlfa,
-    SelectBeta,
     Deployment,
     Organization,
     Environment,
@@ -42,6 +39,8 @@ pub enum Id {
 pub enum UserEvent {
     ModalChanged(bool),
     SetCurrentDeployment(String),
+    SetCurrentOrganization(String),
+    SetCurrentEnvironment(String),
     None,
 }
 
@@ -49,6 +48,7 @@ impl PartialEq for UserEvent {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (UserEvent::ModalChanged(_), UserEvent::ModalChanged(_)) => true,
+            (UserEvent::SetCurrentDeployment(_), UserEvent::SetCurrentDeployment(_)) => true,
             _ => false,
         }
     }
