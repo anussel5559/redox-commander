@@ -1,9 +1,7 @@
 use tuirealm::{
     tui::layout::{Constraint, Direction, Layout, Rect},
-    State, Sub, SubClause, SubEventClause,
+    State,
 };
-
-use crate::UserEvent;
 
 use super::{app::model::ModelState, Id, Mount, Page, Render};
 
@@ -24,10 +22,7 @@ impl Page for PrimaryPage {
             Mount {
                 id: Id::Deployment,
                 component: Box::new(deployment),
-                subs: vec![Sub::new(
-                    SubEventClause::User(UserEvent::SetCurrentDeployment(String::default())),
-                    SubClause::Always,
-                )],
+                subs: Deployment::get_subs(),
             },
             Mount {
                 id: Id::Organization,

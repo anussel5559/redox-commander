@@ -1,6 +1,7 @@
 use std::{
     io::{self},
     path::PathBuf,
+    time::SystemTime,
 };
 
 use anyhow::Result;
@@ -16,6 +17,7 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use redox_core::ConfigurationFile;
+use tracing::Level;
 use tuirealm::{tui::prelude::CrosstermBackend, AttrValue, Attribute, PollStrategy, Terminal};
 
 #[derive(Debug, PartialEq)]
@@ -36,6 +38,24 @@ pub enum Id {
     Deployment,
     Organization,
     Environment,
+    Reporter,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+pub struct ReportMessage {
+    pub time: SystemTime,
+    pub message: String,
+    pub level: Level,
+}
+
+impl Default for ReportMessage {
+    fn default() -> Self {
+        Self {
+            time: SystemTime::now(),
+            message: String::new(),
+            level: Level::INFO,
+        }
+    }
 }
 
 #[derive(Debug, Eq, Clone, PartialOrd, Ord)]
@@ -44,15 +64,14 @@ pub enum UserEvent {
     SetCurrentDeployment(String),
     SetCurrentOrganization(String),
     SetCurrentEnvironment(String),
+    UpdateReporter(ReportMessage),
     None,
 }
 
 impl PartialEq for UserEvent {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (UserEvent::ModalChanged(_), UserEvent::ModalChanged(_)) => true,
-            (UserEvent::SetCurrentDeployment(_), UserEvent::SetCurrentDeployment(_)) => true,
-            _ => false,
+            _ => true,
         }
     }
 }

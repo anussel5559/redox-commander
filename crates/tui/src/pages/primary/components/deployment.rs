@@ -1,7 +1,7 @@
 use tuirealm::command::Cmd;
 use tuirealm::event::{Key, KeyEvent};
 use tuirealm::props::{Alignment, BorderType, Borders, Color, TextModifiers};
-use tuirealm::{Component, Event, MockComponent, Sub};
+use tuirealm::{Component, Event, MockComponent, Sub, SubClause, SubEventClause};
 
 use crate::mock_components::FocusableParagraph;
 use crate::{Id, Msg, UserEvent};
@@ -29,7 +29,10 @@ impl Deployment {
     }
 
     pub fn get_subs() -> Vec<Sub<Id, UserEvent>> {
-        vec![]
+        vec![Sub::new(
+            SubEventClause::User(UserEvent::SetCurrentDeployment(String::default())),
+            SubClause::Always,
+        )]
     }
 
     pub fn set_value(&mut self, val: Option<String>) {
