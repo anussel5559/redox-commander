@@ -1,4 +1,5 @@
 mod configuration;
-mod util;
+
+pub mod util;
 
 pub use configuration::{Configuration, ConfigurationFile, Deployment, DeploymentAuth};

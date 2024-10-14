@@ -29,7 +29,7 @@ pub struct Configuration {
 }
 
 impl Configuration {
-    /// Load collection from a file
+    /// Load configuration from a file
     pub fn load(path: &PathBuf) -> anyhow::Result<Self> {
         info!(?path, "Loading collection file");
 

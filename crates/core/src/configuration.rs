@@ -103,7 +103,7 @@ fn detect_path(dir: &Path) -> Option<PathBuf> {
 
     /// Search a single directory for a configuration file
     fn search(dir: &Path) -> Option<PathBuf> {
-        trace!("Scanning for coinfiguration file in {dir:?}");
+        trace!("Scanning for configuration file in {dir:?}");
         let paths = CONFIG_FILES
             .iter()
             .map(|file| dir.join(file))

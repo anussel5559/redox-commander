@@ -6,6 +6,7 @@ use std::{
 };
 
 use redox_core::{Configuration, ConfigurationFile, Deployment};
+use tracing::info;
 use tuirealm::{
     listener::{ListenerResult, Poll},
     props::{Alignment, Color, TextModifiers},
@@ -154,6 +155,7 @@ impl Model {
                 .unwrap_or_else(|_| {
                     ConfigurationFile::with_path(self.model_state.configuration_path.clone())
                 });
+        info!("Configuration file loaded");
         // If the configuration has a deployment with default, trigger that user event
         if let Some(deployment) = configuration_file
             .configuration

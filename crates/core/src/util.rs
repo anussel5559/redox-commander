@@ -3,6 +3,8 @@ use std::{io::Read, ops::Deref};
 use serde::de::DeserializeOwned;
 use tracing::error;
 
+pub mod paths;
+
 /// Parse bytes from a reader into YAML. This will merge any anchors/aliases.
 pub fn parse_yaml<T: DeserializeOwned>(reader: impl Read) -> serde_yaml::Result<T> {
     // Two-step parsing is required for anchor/alias merging
