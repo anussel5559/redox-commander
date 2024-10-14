@@ -6,5 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = {workspace = true}
 crossterm = {workspace = true, features = ["bracketed-paste", "windows", "events", "event-stream"]}
+redox_core={workspace = true}
+tracing = {workspace = true}
 tui-realm-stdlib = "1.3.2"
 tuirealm = "1.9.2"

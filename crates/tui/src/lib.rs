@@ -1,4 +1,8 @@
-use std::io::{self};
+use std::{
+    io::{self},
+    path::PathBuf,
+    time::SystemTime,
+};
 
 use anyhow::Result;
 
@@ -12,15 +16,16 @@ use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use tuirealm::{
-    tui::prelude::CrosstermBackend, AttrValue, Attribute, PollStrategy, Terminal, Update,
-};
+use redox_core::ConfigurationFile;
+use tracing::Level;
+use tuirealm::{tui::prelude::CrosstermBackend, AttrValue, Attribute, PollStrategy, Terminal};
 
 #[derive(Debug, PartialEq)]
 pub enum Msg {
     AppClose,
     Clock,
     SetActive(Id),
+    LoadConfiguration,
     OpenModal,
     None,
 }
@@ -33,6 +38,24 @@ pub enum Id {
     Deployment,
     Organization,
     Environment,
+    Reporter,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+pub struct ReportMessage {
+    pub time: SystemTime,
+    pub message: String,
+    pub level: Level,
+}
+
+impl Default for ReportMessage {
+    fn default() -> Self {
+        Self {
+            time: SystemTime::now(),
+            message: String::new(),
+            level: Level::INFO,
+        }
+    }
 }
 
 #[derive(Debug, Eq, Clone, PartialOrd, Ord)]
@@ -41,15 +64,14 @@ pub enum UserEvent {
     SetCurrentDeployment(String),
     SetCurrentOrganization(String),
     SetCurrentEnvironment(String),
+    UpdateReporter(ReportMessage),
     None,
 }
 
 impl PartialEq for UserEvent {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (UserEvent::ModalChanged(_), UserEvent::ModalChanged(_)) => true,
-            (UserEvent::SetCurrentDeployment(_), UserEvent::SetCurrentDeployment(_)) => true,
-            _ => false,
+            _ => true,
         }
     }
 }
@@ -57,9 +79,11 @@ impl PartialEq for UserEvent {
 pub struct Tui {}
 
 impl Tui {
-    pub async fn start() -> Result<()> {
+    pub async fn start(collection_path: Option<PathBuf>) -> Result<()> {
+        let configuration_path = ConfigurationFile::try_path(None, collection_path)?;
         let term = initialize_terminal()?;
-        let mut model = Model::new(term);
+
+        let mut model = Model::new(term, configuration_path);
 
         while !model.quit {
             // Tick
@@ -74,17 +98,21 @@ impl Tui {
                         )
                         .is_ok());
                 }
-                Ok(messages) if messages.len() > 0 => {
-                    // NOTE: redraw if at least one msg has been processed
-                    model.redraw = true;
-                    for msg in messages.into_iter() {
-                        let mut msg = Some(msg);
-                        while msg.is_some() {
-                            msg = model.update(msg);
+                Ok(mut messages) => {
+                    if model.model_state.configuration.is_none() {
+                        messages.push(Msg::LoadConfiguration);
+                    }
+                    if messages.len() > 0 {
+                        // NOTE: redraw if at least one msg has been processed
+                        model.redraw = true;
+                        for msg in messages.into_iter() {
+                            let mut msg = Some(msg);
+                            while msg.is_some() {
+                                msg = model.update(msg).await;
+                            }
                         }
                     }
                 }
-                _ => {}
             }
             // Redraw
             if model.redraw {
