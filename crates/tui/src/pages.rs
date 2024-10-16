@@ -1,5 +1,5 @@
 use app::model::ModelState;
-use tuirealm::{tui::layout::Rect, Component, State, Sub};
+use tuirealm::{ratatui::layout::Rect, Component, State, Sub};
 
 pub use super::*;
 

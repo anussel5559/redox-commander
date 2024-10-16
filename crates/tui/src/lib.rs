@@ -1,5 +1,5 @@
 use std::{
-    io::{self},
+    io::{self, Stdout},
     path::PathBuf,
     time::SystemTime,
 };
@@ -19,7 +19,9 @@ use crossterm::{
 };
 use redox_core::ConfigurationFile;
 use tracing::Level;
-use tuirealm::{tui::prelude::CrosstermBackend, AttrValue, Attribute, PollStrategy, Terminal};
+use tuirealm::{
+    ratatui::prelude::CrosstermBackend, ratatui::Terminal, AttrValue, Attribute, PollStrategy,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum Msg {
@@ -128,7 +130,7 @@ impl Tui {
 }
 
 /// Set up terminal for TUI
-fn initialize_terminal() -> anyhow::Result<Terminal> {
+fn initialize_terminal() -> anyhow::Result<Terminal<CrosstermBackend<Stdout>>> {
     crossterm::terminal::enable_raw_mode()?;
     let mut stdout = io::stdout();
     crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;

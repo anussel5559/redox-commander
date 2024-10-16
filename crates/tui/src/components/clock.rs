@@ -1,15 +1,15 @@
 use std::ops::Add;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use tui_realm_stdlib::Label;
 use tuirealm::command::{Cmd, CmdResult};
 use tuirealm::props::{Alignment, Color, TextModifiers};
-use tuirealm::tui::layout::Rect;
+use tuirealm::ratatui::layout::Rect;
 use tuirealm::{
     AttrValue, Attribute, Component, Event, Frame, MockComponent, State, StateValue, Sub,
     SubClause, SubEventClause,
 };
 
+use crate::mock_components::Label;
 use crate::{Id, Msg, UserEvent};
 
 /// Simple clock component which displays current time

@@ -1,16 +1,17 @@
-use tui_realm_stdlib::Phantom;
 use tuirealm::{
     command::{Cmd, CmdResult},
     event::{Key, KeyEvent, KeyModifiers},
-    tui::layout::Rect,
+    ratatui::layout::Rect,
     AttrValue, Attribute, Component, Event, Frame, MockComponent, State, StateValue, Sub,
     SubClause, SubEventClause,
 };
 
+use crate::mock_components::Listener;
+
 use super::{Id, Msg, UserEvent};
 
 pub struct GlobalListener {
-    component: Phantom,
+    component: Listener,
     states: OwnStates,
 }
 
@@ -46,7 +47,7 @@ impl GlobalListener {
 
     pub fn new() -> Self {
         Self {
-            component: Phantom::default(),
+            component: Listener::default(),
             states: OwnStates::new(),
         }
     }

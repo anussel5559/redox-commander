@@ -1,8 +1,8 @@
 use tuirealm::command::{Cmd, CmdResult};
 use tuirealm::props::{Alignment, BorderSides, Borders, Color, Style, TextModifiers};
-use tuirealm::tui::layout::Rect;
-use tuirealm::tui::text::Text;
-use tuirealm::tui::widgets::{Block, Paragraph};
+use tuirealm::ratatui::layout::Rect;
+use tuirealm::ratatui::text::Text;
+use tuirealm::ratatui::widgets::{Block, Paragraph};
 use tuirealm::{AttrValue, Attribute, Frame, MockComponent, Props, State, StateValue};
 
 #[derive(Default)]

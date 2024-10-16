@@ -1,5 +1,5 @@
 use tuirealm::{
-    tui::layout::{Constraint, Direction, Layout, Rect},
+    ratatui::layout::{Constraint, Direction, Layout, Rect},
     State,
 };
 
