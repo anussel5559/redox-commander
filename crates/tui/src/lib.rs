@@ -10,6 +10,7 @@ mod app;
 mod components;
 mod mock_components;
 mod pages;
+mod util;
 
 use app::model::Model;
 use crossterm::{

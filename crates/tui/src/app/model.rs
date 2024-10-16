@@ -6,7 +6,7 @@ use std::{
 };
 
 use redox_core::{Configuration, ConfigurationFile, Deployment};
-use tracing::{info, Level};
+use tracing::Level;
 use tuirealm::{
     listener::{ListenerResult, Poll},
     props::{Alignment, Color, TextModifiers},
@@ -17,6 +17,7 @@ use tuirealm::{
 use crate::{
     components::{Clock, GlobalListener, Reporter},
     pages::{Page, PrimaryPage},
+    util::ResultReported,
     Id, Msg, ReportMessage, UserEvent,
 };
 
@@ -86,13 +87,19 @@ impl Model {
         assert!(self
             .terminal
             .draw(|f| {
+                // if the reporter is focused, give it more length
+                let footer_size = match self.app.query(&Id::Reporter, Attribute::Focus).unwrap() {
+                    Some(AttrValue::Flag(true)) => 10,
+                    _ => 3,
+                };
+
                 let [header, body, footer] = Layout::default()
                     .direction(Direction::Vertical)
                     .margin(1)
                     .constraints([
                         Constraint::Length(1),
                         Constraint::Fill(1),
-                        Constraint::Length(3),
+                        Constraint::Length(footer_size),
                     ])
                     .areas(f.size());
 
@@ -166,10 +173,20 @@ impl Model {
         let configuration_file =
             ConfigurationFile::load(self.model_state.configuration_path.clone())
                 .await
-                .unwrap_or_else(|_| {
+                .reported(
+                    &self.event_queue,
+                    ReportMessage {
+                        time: SystemTime::now(),
+                        message: format!(
+                            "Configuration loaded from {:?}",
+                            self.model_state.configuration_path
+                        ),
+                        level: Level::INFO,
+                    },
+                )
+                .unwrap_or_else(|| {
                     ConfigurationFile::with_path(self.model_state.configuration_path.clone())
                 });
-        info!("Configuration file loaded");
 
         // If the configuration has a deployment with default, trigger that user event
         if let Some(deployment) = configuration_file
@@ -183,13 +200,6 @@ impl Model {
         }
 
         self.model_state.configuration = Some(configuration_file.configuration);
-
-        self.event_queue
-            .push(UserEvent::UpdateReporter(ReportMessage {
-                time: SystemTime::now(),
-                message: format!("Configuration loaded"),
-                level: Level::INFO,
-            }));
     }
 
     pub async fn update(&mut self, msg: Option<Msg>) -> Option<Msg> {
