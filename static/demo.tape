@@ -21,12 +21,14 @@ Sleep 500ms
 Type@75ms "rc"
 Sleep 700ms
 Enter
-Sleep 1s
+Sleep 1500ms
 Type "d"
-Sleep 2s
+Sleep 1500ms
 Type "o"
-Sleep 2s
+Sleep 1500ms
 Type "e"
+Sleep 1500ms
+Type "R"
 Sleep 2s
 
 Hide

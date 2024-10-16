@@ -39,6 +39,11 @@ impl GlobalListener {
         modifiers: KeyModifiers::NONE,
     };
 
+    pub const KEY_EVENT_REPORTER_FOCUS: KeyEvent = KeyEvent {
+        code: Key::Char('R'),
+        modifiers: KeyModifiers::SHIFT,
+    };
+
     pub fn new() -> Self {
         Self {
             component: Phantom::default(),
@@ -66,6 +71,10 @@ impl GlobalListener {
             ),
             Sub::new(
                 SubEventClause::Keyboard(Self::KEY_EVENT_ENV_FOCUS),
+                SubClause::HasState(Id::Listener, State::One(StateValue::Bool(false))),
+            ),
+            Sub::new(
+                SubEventClause::Keyboard(Self::KEY_EVENT_REPORTER_FOCUS),
                 SubClause::HasState(Id::Listener, State::One(StateValue::Bool(false))),
             ),
             Sub::new(
@@ -118,6 +127,9 @@ impl Component<Msg, UserEvent> for GlobalListener {
             }
             Event::Keyboard(Self::KEY_EVENT_ENV_FOCUS) => {
                 return Some(Msg::SetActive(Id::Environment))
+            }
+            Event::Keyboard(Self::KEY_EVENT_REPORTER_FOCUS) => {
+                return Some(Msg::SetActive(Id::Reporter))
             }
             Event::User(UserEvent::ModalChanged(val)) => {
                 self.states.set_modal_state(val);
