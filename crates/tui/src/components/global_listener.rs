@@ -2,7 +2,7 @@ use tui_realm_stdlib::Phantom;
 use tuirealm::{
     command::{Cmd, CmdResult},
     event::{Key, KeyEvent, KeyModifiers},
-    tui::layout::Rect,
+    ratatui::layout::Rect,
     AttrValue, Attribute, Component, Event, Frame, MockComponent, State, StateValue, Sub,
     SubClause, SubEventClause,
 };

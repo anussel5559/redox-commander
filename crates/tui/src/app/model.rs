@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    io::Stdout,
     path::PathBuf,
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
@@ -10,8 +11,12 @@ use tracing::Level;
 use tuirealm::{
     listener::{ListenerResult, Poll},
     props::{Alignment, Color, TextModifiers},
-    tui::layout::{Constraint, Direction, Flex, Layout},
-    Application, AttrValue, Attribute, Event, EventListenerCfg, Terminal,
+    ratatui::{
+        layout::{Constraint, Direction, Flex, Layout},
+        prelude::CrosstermBackend,
+        Terminal,
+    },
+    Application, AttrValue, Attribute, Event, EventListenerCfg,
 };
 
 use crate::{
@@ -46,7 +51,7 @@ pub struct Model {
     /// Tells whether to redraw interface
     pub redraw: bool,
     /// Used to draw to terminal
-    pub terminal: Terminal,
+    pub terminal: Terminal<CrosstermBackend<Stdout>>,
     // tracks the current page mounted and viewed
     pub cur_page: Box<dyn Page>,
     // internal event queue for user events
@@ -56,7 +61,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(terminal: Terminal, configuration_path: PathBuf) -> Self {
+    pub fn new(terminal: Terminal<CrosstermBackend<Stdout>>, configuration_path: PathBuf) -> Self {
         let cur_page = Box::new(PrimaryPage);
         let event_queue = InternalEventQueue::new();
         let init_model_state = ModelState::new(configuration_path);
@@ -101,7 +106,7 @@ impl Model {
                         Constraint::Fill(1),
                         Constraint::Length(footer_size),
                     ])
-                    .areas(f.size());
+                    .areas(f.area());
 
                 let [clock_area] = Layout::horizontal([Constraint::Length(8)])
                     .flex(Flex::End)
@@ -127,8 +132,8 @@ impl Model {
     ) -> Application<Id, Msg, UserEvent> {
         let mut app: Application<Id, Msg, UserEvent> = Application::init(
             EventListenerCfg::default()
-                .default_input_listener(Duration::from_millis(20))
-                .port(Box::new(user_queue), Duration::from_millis(100))
+                .crossterm_input_listener(Duration::from_millis(20), 1)
+                .add_port(Box::new(user_queue), Duration::from_millis(100), 1)
                 .poll_timeout(Duration::from_millis(10))
                 .tick_interval(Duration::from_secs(1)),
         );
