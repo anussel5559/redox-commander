@@ -8,5 +8,4 @@ anyhow = {workspace = true}
 crossterm = {workspace = true, features = ["bracketed-paste", "windows", "events", "event-stream"]}
 redox_core={workspace = true}
 tracing = {workspace = true}
-tui-realm-stdlib = "2.0.1"
 tuirealm = "2.0.3"

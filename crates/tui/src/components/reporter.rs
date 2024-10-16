@@ -1,5 +1,4 @@
 use tracing::Level;
-use tui_realm_stdlib::Textarea;
 use tuirealm::command::{Cmd, Direction, Position};
 use tuirealm::event::{Key, KeyEvent};
 use tuirealm::props::{Alignment, BorderType, Borders, Color, PropPayload, PropValue, TextSpan};
@@ -7,12 +6,13 @@ use tuirealm::{
     AttrValue, Attribute, Component, Event, MockComponent, Sub, SubClause, SubEventClause,
 };
 
+use crate::mock_components::TextArea;
 use crate::{Id, Msg, ReportMessage, UserEvent};
 
 #[derive(MockComponent)]
 pub struct Reporter {
     lines: Vec<TextSpan>,
-    component: Textarea,
+    component: TextArea,
 }
 
 impl Reporter {
@@ -20,7 +20,7 @@ impl Reporter {
         let initial_lines = vec![];
         Self {
             lines: initial_lines.clone(),
-            component: Textarea::default()
+            component: TextArea::default()
                 .borders(
                     Borders::default()
                         .modifiers(BorderType::Rounded)
