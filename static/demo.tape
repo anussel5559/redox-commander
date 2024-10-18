@@ -10,11 +10,12 @@ Set Theme "Catppuccin Mocha"
 Hide
 Type "cargo build --release"
 Enter
-Sleep 2s
+Sleep 3s
 Type "cp target/release/rc ~/bin"
 Enter
 Type "clear"
 Enter
+Sleep 500ms
 Show
 
 Sleep 500ms
