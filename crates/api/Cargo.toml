@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
-reqwest = "0.12.8"
+chrono = { workspace = true }
 jsonwebtoken = "8.1.1"
+reqwest = { version="0.12.8", features = ["json"] }
+serde = {workspace = true, features = ["derive"]}

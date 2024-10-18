@@ -1,11 +1,11 @@
 use anyhow::anyhow;
+use serde::Serialize;
 use std::{fs::File, io::Read};
 
-use jsonwebtoken::EncodingKey;
+use jsonwebtoken::{encode, EncodingKey, Header};
 
 #[derive(Clone)]
 pub struct Key {
-    file: String,
     signing_key: Option<EncodingKey>,
 }
 
@@ -24,8 +24,24 @@ impl Key {
             .map_err(|e| anyhow!(format!("Failed to load in pem file. Error: {:?}", e)))?;
 
         anyhow::Ok(Self {
-            file: file_path.clone(),
             signing_key: Some(encoding_key),
         })
+    }
+
+    pub fn generate_signed_jwt<T>(
+        &self,
+        header: &Header,
+        claims: &T,
+    ) -> anyhow::Result<String, anyhow::Error>
+    where
+        T: Serialize,
+    {
+        let key = self
+            .signing_key
+            .as_ref()
+            .ok_or_else(|| anyhow!("No signing key found"))?;
+
+        encode(header, claims, key)
+            .map_err(|e| anyhow!(format!("Failed to encode jwt. Error: {:?}", e)))
     }
 }
