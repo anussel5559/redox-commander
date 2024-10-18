@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = {workspace = true}
+chrono = { workspace = true }
 crossterm = {workspace = true, features = ["bracketed-paste", "windows", "events", "event-stream"]}
 redox_api={workspace = true}
 redox_core={workspace = true}

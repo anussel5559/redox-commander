@@ -135,8 +135,8 @@ impl Model {
     ) -> Application<Id, Msg, UserEvent> {
         let mut app: Application<Id, Msg, UserEvent> = Application::init(
             EventListenerCfg::default()
-                .crossterm_input_listener(Duration::from_millis(20), 1)
-                .add_port(Box::new(user_queue), Duration::from_millis(100), 1)
+                .crossterm_input_listener(Duration::from_millis(20), 5)
+                .add_port(Box::new(user_queue), Duration::from_millis(100), 5)
                 .poll_timeout(Duration::from_millis(10))
                 .tick_interval(Duration::from_secs(1)),
         );
@@ -203,28 +203,44 @@ impl Model {
             .iter()
             .find(|d| d.default == Some(true))
         {
-            self.change_deployment(deployment.clone());
+            self.change_deployment(deployment.clone()).await;
         }
 
         self.model_state.configuration = Some(configuration_file.configuration);
     }
 
-    fn change_deployment(&mut self, new_deployment: Deployment) {
-        let new_auth_client =
-            RedoxRequestClient::new(&new_deployment.host, &new_deployment.auth.private_key_file)
-                .reported(
-                    &self.event_queue,
-                    ReportMessage {
-                        time: SystemTime::now(),
-                        message: format!(
-                            "Successfully loaded new request client for {}",
-                            new_deployment.name
-                        ),
-                        level: Level::INFO,
-                    },
-                )
-                .map(|client| Some(client))
-                .unwrap_or_else(|| None);
+    async fn change_deployment(&mut self, new_deployment: Deployment) {
+        let mut new_auth_client = RedoxRequestClient::new(
+            &new_deployment.host,
+            &new_deployment.auth.private_key_file,
+            &new_deployment.auth.kid,
+            &new_deployment.auth.client_id,
+        )
+        .reported(
+            &self.event_queue,
+            ReportMessage {
+                time: SystemTime::now(),
+                message: format!(
+                    "Successfully loaded new request client for {}",
+                    new_deployment.name
+                ),
+                level: Level::INFO,
+            },
+        )
+        .map(|client| Some(client))
+        .unwrap_or_else(|| None);
+
+        // if we have a valid auth client, go and load a jwt in to it
+        if let Some(ref mut client) = new_auth_client {
+            client.retrieve_jwt().await.reported(
+                &self.event_queue,
+                ReportMessage {
+                    time: SystemTime::now(),
+                    message: format!("Successfully loaded JWT for {}", new_deployment.name),
+                    level: Level::INFO,
+                },
+            );
+        }
 
         self.model_state.api_client = new_auth_client;
         self.event_queue
