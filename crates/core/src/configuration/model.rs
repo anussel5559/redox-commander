@@ -6,24 +6,24 @@ use tracing::info;
 
 use crate::util::{parse_yaml, ResultTraced};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DeploymentAuth {
-    kid: String,
+    pub kid: String,
     #[serde(rename = "clientId")]
-    client_id: String,
+    pub client_id: String,
     #[serde(rename = "privateKeyFile")]
-    private_key_file: String,
+    pub private_key_file: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Deployment {
     pub name: String,
-    host: String,
+    pub host: String,
     pub default: Option<bool>,
-    auth: DeploymentAuth,
+    pub auth: DeploymentAuth,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 pub struct Configuration {
     pub deployments: Vec<Deployment>,
 }

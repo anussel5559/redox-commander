@@ -6,6 +6,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use redox_api::RedoxRequestClient;
 use redox_core::{Configuration, ConfigurationFile, Deployment};
 use tracing::Level;
 use tuirealm::{
@@ -26,11 +27,12 @@ use crate::{
     Id, Msg, ReportMessage, UserEvent,
 };
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct ModelState {
     configuration_path: PathBuf,
     pub configuration: Option<Configuration>,
     pub current_deployment: Option<Deployment>,
+    pub api_client: Option<RedoxRequestClient>,
 }
 
 impl ModelState {
@@ -39,6 +41,7 @@ impl ModelState {
             configuration_path,
             configuration: None,
             current_deployment: None,
+            api_client: None,
         }
     }
 }
@@ -95,7 +98,7 @@ impl Model {
                 // if the reporter is focused, give it more length
                 let footer_size = match self.app.query(&Id::Reporter, Attribute::Focus).unwrap() {
                     Some(AttrValue::Flag(true)) => 10,
-                    _ => 3,
+                    _ => 4,
                 };
 
                 let [header, body, footer] = Layout::default()
@@ -132,8 +135,8 @@ impl Model {
     ) -> Application<Id, Msg, UserEvent> {
         let mut app: Application<Id, Msg, UserEvent> = Application::init(
             EventListenerCfg::default()
-                .crossterm_input_listener(Duration::from_millis(20), 1)
-                .add_port(Box::new(user_queue), Duration::from_millis(100), 1)
+                .crossterm_input_listener(Duration::from_millis(20), 5)
+                .add_port(Box::new(user_queue), Duration::from_millis(100), 5)
                 .poll_timeout(Duration::from_millis(10))
                 .tick_interval(Duration::from_secs(1)),
         );
@@ -200,11 +203,49 @@ impl Model {
             .iter()
             .find(|d| d.default == Some(true))
         {
-            self.event_queue
-                .push(UserEvent::SetCurrentDeployment(deployment.name.clone()));
+            self.change_deployment(deployment.clone()).await;
         }
 
         self.model_state.configuration = Some(configuration_file.configuration);
+    }
+
+    async fn change_deployment(&mut self, new_deployment: Deployment) {
+        let mut new_auth_client = RedoxRequestClient::new(
+            &new_deployment.host,
+            &new_deployment.auth.private_key_file,
+            &new_deployment.auth.kid,
+            &new_deployment.auth.client_id,
+        )
+        .reported(
+            &self.event_queue,
+            ReportMessage {
+                time: SystemTime::now(),
+                message: format!(
+                    "Successfully loaded new request client for {}",
+                    new_deployment.name
+                ),
+                level: Level::INFO,
+            },
+        )
+        .map(|client| Some(client))
+        .unwrap_or_else(|| None);
+
+        // if we have a valid auth client, go and load a jwt in to it
+        if let Some(ref mut client) = new_auth_client {
+            client.retrieve_jwt().await.reported(
+                &self.event_queue,
+                ReportMessage {
+                    time: SystemTime::now(),
+                    message: format!("Successfully loaded JWT for {}", new_deployment.name),
+                    level: Level::INFO,
+                },
+            );
+        }
+
+        self.model_state.api_client = new_auth_client;
+        self.event_queue
+            .push(UserEvent::SetCurrentDeployment(new_deployment.name.clone()));
+        self.model_state.current_deployment = Some(new_deployment);
     }
 
     pub async fn update(&mut self, msg: Option<Msg>) -> Option<Msg> {

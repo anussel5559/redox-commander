@@ -8,14 +8,15 @@ use tuirealm::props::{
     Alignment, AttrValue, Attribute, Borders, Color, PropPayload, PropValue, Props, Style,
     TextModifiers, TextSpan,
 };
-use tuirealm::ratatui::text::{Line, Span};
 use tuirealm::ratatui::{
     layout::Rect,
     widgets::{List, ListItem, ListState},
 };
 use tuirealm::{Frame, MockComponent, State};
 
-use super::utils::{get_block, use_or_default_styles};
+use unicode_width::UnicodeWidthStr;
+
+use super::utils::{get_block, wrap_spans};
 
 // -- States
 
@@ -186,21 +187,15 @@ impl MockComponent for TextArea {
                 .get(Attribute::HighlightedStr)
                 .map(|x| x.unwrap_string());
             // NOTE: wrap width is width of area minus 2 (block) minus width of highlighting string
-            // let wrap_width =
-            //     (area.width as usize) - self.hg_str.as_ref().map(|x| x.width()).unwrap_or(0) - 2;
+            let wrap_width =
+                (area.width as usize) - self.hg_str.as_ref().map(|x| x.width()).unwrap_or(0) - 2;
             let lines: Vec<ListItem> =
                 match self.props.get(Attribute::Text).map(|x| x.unwrap_payload()) {
                     Some(PropPayload::Vec(spans)) => spans
                         .iter()
                         .cloned()
                         .map(|x| x.unwrap_text_span())
-                        .map(|x| {
-                            let (fg, bg, modifiers) = use_or_default_styles(&self.props, &x);
-                            Line::from(vec![Span::styled(
-                                x.content,
-                                Style::default().add_modifier(modifiers).fg(fg).bg(bg),
-                            )])
-                        })
+                        .map(|x| wrap_spans(vec![x].as_slice(), wrap_width, &self.props))
                         .map(ListItem::new)
                         .collect(),
                     _ => Vec::new(),
