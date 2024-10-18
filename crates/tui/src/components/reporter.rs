@@ -52,10 +52,8 @@ impl Reporter {
     pub fn set_value(&mut self, val: Option<ReportMessage>) {
         if let Some(report_message) = val {
             let set_val = format!("[{}] {}", report_message.level, report_message.message);
-            self.lines.insert(
-                0,
-                TextSpan::from(set_val).fg(Self::level_color(report_message.level)),
-            );
+            self.lines
+                .push(TextSpan::from(set_val).fg(Self::level_color(report_message.level)));
             self.component.attr(
                 Attribute::Text,
                 AttrValue::Payload(PropPayload::Vec(

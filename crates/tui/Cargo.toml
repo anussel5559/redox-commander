@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 anyhow = {workspace = true}
 crossterm = {workspace = true, features = ["bracketed-paste", "windows", "events", "event-stream"]}
+redox_api={workspace = true}
 redox_core={workspace = true}
+textwrap = "0.16.1"
 tracing = {workspace = true}
 tuirealm = "2.0.3"
+unicode-width = "0.2.0"
