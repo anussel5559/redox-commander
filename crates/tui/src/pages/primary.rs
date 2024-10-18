@@ -27,12 +27,12 @@ impl Page for PrimaryPage {
             Mount {
                 id: Id::Organization,
                 component: Box::new(Organization::new()),
-                subs: vec![],
+                subs: Organization::get_subs(),
             },
             Mount {
                 id: Id::Environment,
                 component: Box::new(Environment::new()),
-                subs: vec![],
+                subs: Environment::get_subs(),
             },
         ]
     }

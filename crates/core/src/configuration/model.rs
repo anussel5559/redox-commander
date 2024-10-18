@@ -20,6 +20,8 @@ pub struct Deployment {
     pub name: String,
     pub host: String,
     pub default: Option<bool>,
+    #[serde(rename = "defaultOrg")]
+    pub default_org: Option<i32>,
     pub auth: DeploymentAuth,
 }
 

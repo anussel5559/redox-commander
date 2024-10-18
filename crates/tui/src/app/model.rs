@@ -226,9 +226,7 @@ impl Model {
                 ),
                 level: Level::INFO,
             },
-        )
-        .map(|client| Some(client))
-        .unwrap_or_else(|| None);
+        );
 
         // if we have a valid auth client, go and load a jwt in to it
         if let Some(ref mut client) = new_auth_client {
@@ -242,10 +240,24 @@ impl Model {
             );
         }
 
-        self.model_state.api_client = new_auth_client;
         self.event_queue
             .push(UserEvent::SetCurrentDeployment(new_deployment.name.clone()));
+
+        self.model_state.api_client = new_auth_client;
         self.model_state.current_deployment = Some(new_deployment);
+
+        // if our new deployment has a default org, trigger that user event as well
+        if let Some(org) = self
+            .model_state
+            .current_deployment
+            .as_ref()
+            .unwrap()
+            .default_org
+            .clone()
+        {
+            self.event_queue
+                .push(UserEvent::SetCurrentOrganization(org.to_string()));
+        }
     }
 
     pub async fn update(&mut self, msg: Option<Msg>) -> Option<Msg> {
