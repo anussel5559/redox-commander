@@ -5,9 +5,10 @@ use anyhow::anyhow;
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, Header};
 use key::Key;
-use models::auth::AuthToken;
-use reqwest::{Client, StatusCode};
-use serde::Serialize;
+use models::{auth::AuthToken, RedoxApiResource, RequestType};
+use reqwest::{Client, Method, StatusCode};
+use serde::{Deserialize, Serialize};
+use serde_json::from_value;
 
 pub mod key;
 pub mod models;
@@ -28,15 +29,16 @@ pub struct Jwt {
 
 #[derive(Default, Debug, Clone)]
 pub struct Auth {
-    pub client_id: String,
-    pub kid: String,
-    pub jwt: Option<Jwt>,
+    client_id: String,
+    kid: String,
+    jwt: Option<Jwt>,
 }
 
 #[derive(Default, Clone)]
 pub struct RedoxRequestClient {
     client: Client,
     base_url: String,
+    auth_url: Option<String>,
     key: Key,
     auth: Auth,
 }
@@ -75,6 +77,7 @@ impl Ord for RedoxRequestClient {
 impl RedoxRequestClient {
     pub fn new(
         base_url: &String,
+        auth_url: &Option<String>,
         key_file: &String,
         kid: &String,
         client_id: &String,
@@ -84,6 +87,7 @@ impl RedoxRequestClient {
         Ok(Self {
             client,
             base_url: base_url.clone(),
+            auth_url: auth_url.clone(),
             key,
             auth: Auth {
                 client_id: client_id.clone(),
@@ -107,10 +111,15 @@ impl RedoxRequestClient {
         self.key.generate_signed_jwt(&header, &claims)
     }
 
-    pub async fn retrieve_jwt(&mut self) -> anyhow::Result<(), anyhow::Error> {
+    async fn get_new_jwt(&mut self) -> anyhow::Result<(), anyhow::Error> {
         let jwt = self.generate_client_assertion()?;
 
-        let response_jwt = AuthToken::get_auth_token(&self.base_url, &self.client, &jwt)
+        let url = match &self.auth_url {
+            Some(url) => url,
+            None => &self.base_url,
+        };
+
+        let response_jwt = AuthToken::get_auth_token(url, &self.client, &jwt)
             .await
             .map_err(|e| {
                 anyhow!(format!(
@@ -118,10 +127,78 @@ impl RedoxRequestClient {
                     e.status().unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
                 ))
             })?;
+
         self.auth.jwt = Some(Jwt {
             token: response_jwt.access_token,
-            expires_at: Utc::now().timestamp() + response_jwt.expires_in,
+            expires_at: response_jwt.expires_in,
         });
         Ok(())
     }
+
+    pub async fn refresh_jwt(&mut self) -> anyhow::Result<(), anyhow::Error> {
+        if self.auth.jwt.is_none()
+            || self.auth.jwt.as_ref().unwrap().expires_at < Utc::now().timestamp()
+        {
+            self.get_new_jwt().await?;
+        }
+        Ok(())
+    }
+
+    pub async fn make_request<R>(
+        &mut self,
+        request_type: RequestType,
+        resource: R,
+    ) -> anyhow::Result<Response<R>, anyhow::Error>
+    where
+        R: RedoxApiResource,
+    {
+        self.refresh_jwt().await?;
+
+        let request_config = match request_type {
+            RequestType::List => resource.build_list_request(),
+        };
+
+        let request = match request_config.method {
+            Method::GET => self
+                .client
+                .get(&format!("{}/{}", self.base_url, request_config.path)),
+            _ => unimplemented!(),
+        };
+
+        let response = request
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.auth.jwt.as_ref().unwrap().token),
+            )
+            .send()
+            .await?;
+
+        let response_body = response.json::<GeneralApiResponse>().await?;
+
+        match request_type {
+            RequestType::List => {
+                let list = from_value(response_body.payload)?;
+                Ok(Response::List(list))
+            } // _ => {
+              //     let item = from_value(response_body.payload)?;
+              //     Ok(Response::Single(item))
+              // }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct Meta {
+    version: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct GeneralApiResponse {
+    pub meta: Meta,
+    pub payload: serde_json::Value,
+}
+
+pub enum Response<R: RedoxApiResource> {
+    Single(R::Item),
+    List(R::List),
 }

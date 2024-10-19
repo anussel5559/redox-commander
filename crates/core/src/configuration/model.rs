@@ -18,7 +18,10 @@ pub struct DeploymentAuth {
 #[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Deployment {
     pub name: String,
-    pub host: String,
+    #[serde(rename = "authHost")]
+    pub auth_host: Option<String>,
+    #[serde(rename = "apiHost")]
+    pub api_host: String,
     pub default: Option<bool>,
     #[serde(rename = "defaultOrg")]
     pub default_org: Option<i32>,

@@ -11,7 +11,7 @@ use tuirealm::{
 };
 
 use crate::mock_components::TextArea;
-use crate::{Id, Msg, ReportMessage, UserEvent};
+use crate::{reporting::ReportMessage, Id, Msg, UserEvent};
 
 #[derive(Debug, Clone)]
 pub struct FormattedReportMessage {

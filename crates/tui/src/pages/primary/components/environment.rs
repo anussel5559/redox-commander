@@ -1,7 +1,7 @@
 use tuirealm::command::Cmd;
 use tuirealm::event::{Key, KeyEvent};
 use tuirealm::props::{Alignment, BorderType, Borders, Color, TextModifiers};
-use tuirealm::{Component, Event, MockComponent, Sub};
+use tuirealm::{Component, Event, MockComponent, Sub, SubClause, SubEventClause};
 
 use crate::mock_components::FocusableParagraph;
 use crate::{Id, Msg, UserEvent};
@@ -29,7 +29,10 @@ impl Environment {
     }
 
     pub fn get_subs() -> Vec<Sub<Id, UserEvent>> {
-        vec![]
+        vec![Sub::new(
+            SubEventClause::User(UserEvent::SetCurrentEnvironment(None)),
+            SubClause::Always,
+        )]
     }
 
     pub fn set_value(&mut self, val: Option<String>) {
@@ -44,7 +47,9 @@ impl Component<Msg, UserEvent> for Environment {
                 code: Key::Enter, ..
             }) => Cmd::None,
             Event::User(UserEvent::SetCurrentEnvironment(dep)) => {
-                self.set_value(Some(dep));
+                if let Some(env) = dep {
+                    self.set_value(Some(format!("{} [{}]", env.name, env.id)));
+                }
                 Cmd::None
             }
             _ => Cmd::None,

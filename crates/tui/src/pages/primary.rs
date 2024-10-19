@@ -55,9 +55,9 @@ impl Page for PrimaryPage {
         let [deployment_area, org_area, env_area] = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(33),
-                Constraint::Percentage(34),
-                Constraint::Percentage(33),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Length(53),
             ])
             .areas(header);
 

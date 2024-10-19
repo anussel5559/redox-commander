@@ -91,6 +91,10 @@ impl GlobalListener {
                 )),
                 SubClause::Always,
             ),
+            Sub::new(
+                SubEventClause::User(UserEvent::EnvironmentsLoaded(Some(vec![]))),
+                SubClause::Always,
+            ),
         ]
     }
 
@@ -147,6 +151,9 @@ impl Component<Msg, UserEvent> for GlobalListener {
             }
             Event::User(UserEvent::DeploymentLoadFinished(dep, client)) => {
                 return Some(Msg::FinalizeDeployment(dep, client))
+            }
+            Event::User(UserEvent::EnvironmentsLoaded(envs)) => {
+                return Some(Msg::FinalizeEnvironments(envs))
             }
             _ => CmdResult::None,
         };
