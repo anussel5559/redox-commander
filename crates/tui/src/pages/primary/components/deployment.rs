@@ -1,4 +1,4 @@
-use tuirealm::command::Cmd;
+use redox_core::Deployment as CoreDeployment;
 use tuirealm::event::{Key, KeyEvent};
 use tuirealm::props::{Alignment, BorderType, Borders, Color, TextModifiers};
 use tuirealm::{Component, Event, MockComponent, Sub, SubClause, SubEventClause};
@@ -30,7 +30,7 @@ impl Deployment {
 
     pub fn get_subs() -> Vec<Sub<Id, UserEvent>> {
         vec![Sub::new(
-            SubEventClause::User(UserEvent::SetCurrentDeployment(String::default())),
+            SubEventClause::User(UserEvent::SetCurrentDeployment(CoreDeployment::default())),
             SubClause::Always,
         )]
     }
@@ -42,17 +42,15 @@ impl Deployment {
 
 impl Component<Msg, UserEvent> for Deployment {
     fn on(&mut self, ev: Event<UserEvent>) -> Option<Msg> {
-        let cmd = match ev {
+        match ev {
             Event::Keyboard(KeyEvent {
                 code: Key::Enter, ..
-            }) => Cmd::None,
+            }) => None,
             Event::User(UserEvent::SetCurrentDeployment(dep)) => {
-                self.set_value(Some(dep));
-                Cmd::None
+                self.set_value(Some(dep.name.clone()));
+                Some(Msg::LoadDeployment(dep))
             }
-            _ => Cmd::None,
-        };
-        self.perform(cmd);
-        Some(Msg::None)
+            _ => None,
+        }
     }
 }

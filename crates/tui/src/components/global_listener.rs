@@ -1,3 +1,5 @@
+use redox_api::RedoxRequestClient;
+use redox_core::Deployment;
 use tuirealm::{
     command::{Cmd, CmdResult},
     event::{Key, KeyEvent, KeyModifiers},
@@ -82,6 +84,13 @@ impl GlobalListener {
                 SubEventClause::User(UserEvent::ModalChanged(true)),
                 SubClause::Always,
             ),
+            Sub::new(
+                SubEventClause::User(UserEvent::DeploymentLoadFinished(
+                    Deployment::default(),
+                    Some(RedoxRequestClient::default()),
+                )),
+                SubClause::Always,
+            ),
         ]
     }
 
@@ -135,6 +144,9 @@ impl Component<Msg, UserEvent> for GlobalListener {
             Event::User(UserEvent::ModalChanged(val)) => {
                 self.states.set_modal_state(val);
                 CmdResult::None
+            }
+            Event::User(UserEvent::DeploymentLoadFinished(dep, client)) => {
+                return Some(Msg::FinalizeDeployment(dep, client))
             }
             _ => CmdResult::None,
         };

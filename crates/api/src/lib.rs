@@ -1,3 +1,6 @@
+use core::fmt;
+use std::fmt::{Debug, Formatter};
+
 use anyhow::anyhow;
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, Header};
@@ -17,25 +20,56 @@ pub struct Claims {
     exp: i64,
 }
 
-#[derive(Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Jwt {
     token: String,
     expires_at: i64,
 }
 
-#[derive(Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Auth {
     pub client_id: String,
     pub kid: String,
     pub jwt: Option<Jwt>,
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct RedoxRequestClient {
     client: Client,
     base_url: String,
     key: Key,
     auth: Auth,
+}
+
+// Cheap trait implementations to get this working with UserEvents in the TUI
+// since unfortunately I cannot derive these traits by default for one reason or another
+impl Debug for RedoxRequestClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RedoxRequestClient")
+            .field("base_url", &self.base_url)
+            .field("auth", &self.auth)
+            .finish()
+    }
+}
+
+impl PartialEq for RedoxRequestClient {
+    fn eq(&self, other: &Self) -> bool {
+        self.base_url == other.base_url
+    }
+}
+
+impl Eq for RedoxRequestClient {}
+
+impl PartialOrd for RedoxRequestClient {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for RedoxRequestClient {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.base_url.cmp(&other.base_url)
+    }
 }
 
 impl RedoxRequestClient {

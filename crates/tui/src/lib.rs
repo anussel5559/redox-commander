@@ -17,7 +17,8 @@ use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use redox_core::ConfigurationFile;
+use redox_api::RedoxRequestClient;
+use redox_core::{ConfigurationFile, Deployment};
 use tracing::Level;
 use tuirealm::{
     ratatui::prelude::CrosstermBackend, ratatui::Terminal, AttrValue, Attribute, PollStrategy,
@@ -30,6 +31,8 @@ pub enum Msg {
     SetActive(Id),
     LoadConfiguration,
     OpenModal,
+    LoadDeployment(Deployment),
+    FinalizeDeployment(Deployment, Option<RedoxRequestClient>),
     None,
 }
 
@@ -64,7 +67,8 @@ impl Default for ReportMessage {
 #[derive(Debug, Eq, Clone, PartialOrd, Ord)]
 pub enum UserEvent {
     ModalChanged(bool),
-    SetCurrentDeployment(String),
+    SetCurrentDeployment(Deployment),
+    DeploymentLoadFinished(Deployment, Option<RedoxRequestClient>),
     SetCurrentOrganization(String),
     SetCurrentEnvironment(String),
     UpdateReporter(ReportMessage),

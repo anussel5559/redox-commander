@@ -8,6 +8,7 @@ use std::{
 
 use redox_api::RedoxRequestClient;
 use redox_core::{Configuration, ConfigurationFile, Deployment};
+use tokio::spawn;
 use tracing::Level;
 use tuirealm::{
     listener::{ListenerResult, Poll},
@@ -135,8 +136,8 @@ impl Model {
     ) -> Application<Id, Msg, UserEvent> {
         let mut app: Application<Id, Msg, UserEvent> = Application::init(
             EventListenerCfg::default()
-                .crossterm_input_listener(Duration::from_millis(20), 5)
-                .add_port(Box::new(user_queue), Duration::from_millis(100), 5)
+                .crossterm_input_listener(Duration::from_millis(20), 1)
+                .add_port(Box::new(user_queue), Duration::from_millis(50), 1)
                 .poll_timeout(Duration::from_millis(10))
                 .tick_interval(Duration::from_secs(1)),
         );
@@ -203,46 +204,58 @@ impl Model {
             .iter()
             .find(|d| d.default == Some(true))
         {
-            self.change_deployment(deployment.clone()).await;
+            self.event_queue
+                .push(UserEvent::SetCurrentDeployment(deployment.clone()));
         }
 
         self.model_state.configuration = Some(configuration_file.configuration);
     }
 
-    async fn change_deployment(&mut self, new_deployment: Deployment) {
-        let mut new_auth_client = RedoxRequestClient::new(
-            &new_deployment.host,
-            &new_deployment.auth.private_key_file,
-            &new_deployment.auth.kid,
-            &new_deployment.auth.client_id,
-        )
-        .reported(
-            &self.event_queue,
-            ReportMessage {
-                time: SystemTime::now(),
-                message: format!(
-                    "Successfully loaded new request client for {}",
-                    new_deployment.name
-                ),
-                level: Level::INFO,
-            },
-        );
-
-        // if we have a valid auth client, go and load a jwt in to it
-        if let Some(ref mut client) = new_auth_client {
-            client.retrieve_jwt().await.reported(
-                &self.event_queue,
+    fn load_deployment(&self, new_deployment: Deployment) {
+        let event_queue = self.event_queue.clone();
+        spawn(async move {
+            let mut new_auth_client = RedoxRequestClient::new(
+                &new_deployment.host,
+                &new_deployment.auth.private_key_file,
+                &new_deployment.auth.kid,
+                &new_deployment.auth.client_id,
+            )
+            .reported(
+                &event_queue,
                 ReportMessage {
                     time: SystemTime::now(),
-                    message: format!("Successfully loaded JWT for {}", new_deployment.name),
+                    message: format!(
+                        "Successfully loaded new request client for {}",
+                        new_deployment.name
+                    ),
                     level: Level::INFO,
                 },
             );
-        }
 
-        self.event_queue
-            .push(UserEvent::SetCurrentDeployment(new_deployment.name.clone()));
+            // if we have a valid auth client, go and load a jwt in to it
+            if let Some(ref mut client) = new_auth_client {
+                client.retrieve_jwt().await.reported(
+                    &event_queue,
+                    ReportMessage {
+                        time: SystemTime::now(),
+                        message: format!("Successfully loaded JWT for {}", new_deployment.name),
+                        level: Level::INFO,
+                    },
+                );
+            }
 
+            event_queue.push(UserEvent::DeploymentLoadFinished(
+                new_deployment,
+                new_auth_client,
+            ));
+        });
+    }
+
+    fn change_deployment(
+        &mut self,
+        new_deployment: Deployment,
+        new_auth_client: Option<RedoxRequestClient>,
+    ) {
         self.model_state.api_client = new_auth_client;
         self.model_state.current_deployment = Some(new_deployment);
 
@@ -284,6 +297,14 @@ impl Model {
                 }
                 Msg::LoadConfiguration => {
                     self.load_configuration().await;
+                    None
+                }
+                Msg::LoadDeployment(dep) => {
+                    self.load_deployment(dep);
+                    None
+                }
+                Msg::FinalizeDeployment(dep, auth_client) => {
+                    self.change_deployment(dep, auth_client);
                     None
                 }
             }
