@@ -1,7 +1,6 @@
 use std::{
     io::{self, Stdout},
     path::PathBuf,
-    time::SystemTime,
 };
 
 use anyhow::Result;
@@ -10,15 +9,16 @@ mod app;
 mod components;
 mod mock_components;
 mod pages;
-mod util;
+mod reporting;
 
 use app::model::Model;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use redox_core::ConfigurationFile;
-use tracing::Level;
+use redox_api::{models::environment::Environment, RedoxRequestClient};
+use redox_core::{ConfigurationFile, Deployment};
+use reporting::ReportMessage;
 use tuirealm::{
     ratatui::prelude::CrosstermBackend, ratatui::Terminal, AttrValue, Attribute, PollStrategy,
 };
@@ -30,6 +30,10 @@ pub enum Msg {
     SetActive(Id),
     LoadConfiguration,
     OpenModal,
+    LoadDeployment(Deployment),
+    FinalizeDeployment(Deployment, Option<RedoxRequestClient>),
+    LoadEnvironments(String),
+    FinalizeEnvironments(Option<Vec<Environment>>),
     None,
 }
 
@@ -44,29 +48,14 @@ pub enum Id {
     Reporter,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
-pub struct ReportMessage {
-    pub time: SystemTime,
-    pub message: String,
-    pub level: Level,
-}
-
-impl Default for ReportMessage {
-    fn default() -> Self {
-        Self {
-            time: SystemTime::now(),
-            message: String::new(),
-            level: Level::INFO,
-        }
-    }
-}
-
 #[derive(Debug, Eq, Clone, PartialOrd, Ord)]
 pub enum UserEvent {
     ModalChanged(bool),
-    SetCurrentDeployment(String),
+    SetCurrentDeployment(Deployment),
+    DeploymentLoadFinished(Deployment, Option<RedoxRequestClient>),
     SetCurrentOrganization(String),
-    SetCurrentEnvironment(String),
+    EnvironmentsLoaded(Option<Vec<Environment>>),
+    SetCurrentEnvironment(Option<Environment>),
     UpdateReporter(ReportMessage),
     None,
 }

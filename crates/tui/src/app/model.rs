@@ -2,35 +2,43 @@ use std::{
     collections::HashMap,
     io::Stdout,
     path::PathBuf,
-    sync::{Arc, Mutex},
     time::{Duration, SystemTime},
 };
 
-use redox_api::RedoxRequestClient;
+use redox_api::{
+    models::{
+        environment::{Environment, EnvironmentFlag, EnvironmentResource},
+        RequestType,
+    },
+    RedoxRequestClient, Response,
+};
 use redox_core::{Configuration, ConfigurationFile, Deployment};
+use tokio::spawn;
 use tracing::Level;
 use tuirealm::{
-    listener::{ListenerResult, Poll},
     props::{Alignment, Color, TextModifiers},
     ratatui::{
         layout::{Constraint, Direction, Flex, Layout},
         prelude::CrosstermBackend,
         Terminal,
     },
-    Application, AttrValue, Attribute, Event, EventListenerCfg,
+    Application, AttrValue, Attribute, EventListenerCfg,
 };
 
 use crate::{
     components::{Clock, GlobalListener, Reporter},
     pages::{Page, PrimaryPage},
-    util::ResultReported,
-    Id, Msg, ReportMessage, UserEvent,
+    reporting::{ReportMessage, ResultReported},
+    Id, Msg, UserEvent,
 };
+
+use super::event_queue::InternalEventQueue;
 
 #[derive(Clone)]
 pub struct ModelState {
     configuration_path: PathBuf,
     pub configuration: Option<Configuration>,
+    pub environments: Option<Vec<Environment>>,
     pub current_deployment: Option<Deployment>,
     pub api_client: Option<RedoxRequestClient>,
 }
@@ -41,6 +49,7 @@ impl ModelState {
             configuration_path,
             configuration: None,
             current_deployment: None,
+            environments: None,
             api_client: None,
         }
     }
@@ -135,8 +144,8 @@ impl Model {
     ) -> Application<Id, Msg, UserEvent> {
         let mut app: Application<Id, Msg, UserEvent> = Application::init(
             EventListenerCfg::default()
-                .crossterm_input_listener(Duration::from_millis(20), 5)
-                .add_port(Box::new(user_queue), Duration::from_millis(100), 5)
+                .crossterm_input_listener(Duration::from_millis(20), 1)
+                .add_port(Box::new(user_queue), Duration::from_millis(50), 1)
                 .poll_timeout(Duration::from_millis(10))
                 .tick_interval(Duration::from_secs(1)),
         );
@@ -203,49 +212,118 @@ impl Model {
             .iter()
             .find(|d| d.default == Some(true))
         {
-            self.change_deployment(deployment.clone()).await;
+            self.event_queue
+                .push(UserEvent::SetCurrentDeployment(deployment.clone()));
         }
 
         self.model_state.configuration = Some(configuration_file.configuration);
     }
 
-    async fn change_deployment(&mut self, new_deployment: Deployment) {
-        let mut new_auth_client = RedoxRequestClient::new(
-            &new_deployment.host,
-            &new_deployment.auth.private_key_file,
-            &new_deployment.auth.kid,
-            &new_deployment.auth.client_id,
-        )
-        .reported(
-            &self.event_queue,
-            ReportMessage {
-                time: SystemTime::now(),
-                message: format!(
-                    "Successfully loaded new request client for {}",
-                    new_deployment.name
-                ),
-                level: Level::INFO,
-            },
-        )
-        .map(|client| Some(client))
-        .unwrap_or_else(|| None);
-
-        // if we have a valid auth client, go and load a jwt in to it
-        if let Some(ref mut client) = new_auth_client {
-            client.retrieve_jwt().await.reported(
-                &self.event_queue,
+    fn load_deployment(&self, new_deployment: Deployment) {
+        let event_queue = self.event_queue.clone();
+        spawn(async move {
+            let mut new_auth_client = RedoxRequestClient::new(
+                &new_deployment.api_host,
+                &new_deployment.auth_host,
+                &new_deployment.auth.private_key_file,
+                &new_deployment.auth.kid,
+                &new_deployment.auth.client_id,
+            )
+            .reported(
+                &event_queue,
                 ReportMessage {
                     time: SystemTime::now(),
-                    message: format!("Successfully loaded JWT for {}", new_deployment.name),
+                    message: format!(
+                        "Successfully loaded new request client for {}",
+                        new_deployment.name
+                    ),
                     level: Level::INFO,
                 },
             );
-        }
 
+            // if we have a valid auth client, go and load a jwt in to it
+            if let Some(ref mut client) = new_auth_client {
+                client.refresh_jwt().await.reported(
+                    &event_queue,
+                    ReportMessage {
+                        time: SystemTime::now(),
+                        message: format!("Successfully loaded JWT for {}", new_deployment.name),
+                        level: Level::INFO,
+                    },
+                );
+            }
+
+            event_queue.push(UserEvent::DeploymentLoadFinished(
+                new_deployment,
+                new_auth_client,
+            ));
+        });
+    }
+
+    fn change_deployment(
+        &mut self,
+        new_deployment: Deployment,
+        new_auth_client: Option<RedoxRequestClient>,
+    ) {
         self.model_state.api_client = new_auth_client;
-        self.event_queue
-            .push(UserEvent::SetCurrentDeployment(new_deployment.name.clone()));
         self.model_state.current_deployment = Some(new_deployment);
+
+        // if our new deployment has a default org, trigger that user event as well
+        if let Some(org) = self
+            .model_state
+            .current_deployment
+            .as_ref()
+            .unwrap()
+            .default_org
+            .clone()
+        {
+            self.event_queue
+                .push(UserEvent::SetCurrentOrganization(org.to_string()));
+        }
+    }
+
+    fn load_environments(&self, org_id: i32) {
+        let event_queue = self.event_queue.clone();
+        let api_client = self.model_state.api_client.clone();
+        spawn(async move {
+            if let Some(mut api_client) = api_client {
+                let environments: Option<Vec<Environment>> = api_client
+                    .make_request(RequestType::List, EnvironmentResource::new(org_id))
+                    .await
+                    .reported(
+                        &event_queue,
+                        ReportMessage {
+                            time: SystemTime::now(),
+                            message: "Successfully loaded environments".to_string(),
+                            level: Level::INFO,
+                        },
+                    )
+                    // map out the response enum to just the list variant
+                    .map(|response| match response {
+                        Response::List(payload) => Some(payload.environments),
+                        _ => None,
+                    })
+                    .unwrap_or(None);
+
+                event_queue.push(UserEvent::EnvironmentsLoaded(environments));
+            } else {
+                event_queue.push(UserEvent::EnvironmentsLoaded(None));
+            }
+        });
+    }
+
+    fn finalize_environments(&mut self, envs: Option<Vec<Environment>>) {
+        if let Some(envs) = &envs {
+            // if we have a development environmentFlag env, set it
+            if let Some(dev_env) = envs
+                .iter()
+                .find(|env| env.environment_flag == EnvironmentFlag::Development)
+            {
+                self.event_queue
+                    .push(UserEvent::SetCurrentEnvironment(Some(dev_env.clone())));
+            }
+        }
+        self.model_state.environments = envs;
     }
 
     pub async fn update(&mut self, msg: Option<Msg>) -> Option<Msg> {
@@ -274,38 +352,25 @@ impl Model {
                     self.load_configuration().await;
                     None
                 }
+                Msg::LoadDeployment(dep) => {
+                    self.load_deployment(dep);
+                    None
+                }
+                Msg::FinalizeDeployment(dep, auth_client) => {
+                    self.change_deployment(dep, auth_client);
+                    None
+                }
+                Msg::LoadEnvironments(org) => {
+                    self.load_environments(org.parse().unwrap());
+                    None
+                }
+                Msg::FinalizeEnvironments(envs) => {
+                    self.finalize_environments(envs);
+                    None
+                }
             }
         } else {
             None
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct InternalEventQueue {
-    events: Arc<Mutex<Vec<UserEvent>>>,
-}
-
-impl InternalEventQueue {
-    pub fn new() -> Self {
-        Self {
-            events: Arc::new(Mutex::new(Vec::new())),
-        }
-    }
-
-    pub fn push(&self, event: UserEvent) {
-        let mut events = self.events.lock().unwrap();
-        events.push(event);
-    }
-}
-
-impl Poll<UserEvent> for InternalEventQueue {
-    fn poll(&mut self) -> ListenerResult<Option<Event<UserEvent>>> {
-        let mut events = self.events.lock().unwrap();
-        if events.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(Event::User(events.pop().unwrap())))
         }
     }
 }

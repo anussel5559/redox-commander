@@ -34,6 +34,7 @@ impl AuthToken {
             .form(&form_body)
             .send()
             .await?
+            .error_for_status()?
             .json::<AuthTokenResponse>()
             .await?;
         Ok(response)

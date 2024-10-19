@@ -27,12 +27,12 @@ impl Page for PrimaryPage {
             Mount {
                 id: Id::Organization,
                 component: Box::new(Organization::new()),
-                subs: vec![],
+                subs: Organization::get_subs(),
             },
             Mount {
                 id: Id::Environment,
                 component: Box::new(Environment::new()),
-                subs: vec![],
+                subs: Environment::get_subs(),
             },
         ]
     }
@@ -55,9 +55,9 @@ impl Page for PrimaryPage {
         let [deployment_area, org_area, env_area] = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(33),
-                Constraint::Percentage(34),
-                Constraint::Percentage(33),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Length(53),
             ])
             .areas(header);
 

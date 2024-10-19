@@ -1,7 +1,24 @@
-use std::ops::Deref;
+use std::{ops::Deref, time::SystemTime};
 use tracing::{debug, error, info, trace, warn, Level};
 
-use crate::{app::model::InternalEventQueue, ReportMessage, UserEvent};
+use crate::{app::event_queue::InternalEventQueue, UserEvent};
+
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+pub struct ReportMessage {
+    pub time: SystemTime,
+    pub message: String,
+    pub level: Level,
+}
+
+impl Default for ReportMessage {
+    fn default() -> Self {
+        Self {
+            time: SystemTime::now(),
+            message: String::new(),
+            level: Level::INFO,
+        }
+    }
+}
 
 /// Extension trait for [Result]
 pub trait ResultReported<T, E>: Sized {

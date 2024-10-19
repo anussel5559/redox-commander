@@ -4,7 +4,7 @@ use std::{fs::File, io::Read};
 
 use jsonwebtoken::{encode, EncodingKey, Header};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Key {
     signing_key: Option<EncodingKey>,
 }

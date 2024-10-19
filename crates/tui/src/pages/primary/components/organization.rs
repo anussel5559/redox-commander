@@ -1,7 +1,6 @@
-use tuirealm::command::Cmd;
 use tuirealm::event::{Key, KeyEvent};
 use tuirealm::props::{Alignment, BorderType, Borders, Color, TextModifiers};
-use tuirealm::{Component, Event, MockComponent, Sub};
+use tuirealm::{Component, Event, MockComponent, Sub, SubClause, SubEventClause};
 
 use crate::mock_components::FocusableParagraph;
 use crate::{Id, Msg, UserEvent};
@@ -29,7 +28,10 @@ impl Organization {
     }
 
     pub fn get_subs() -> Vec<Sub<Id, UserEvent>> {
-        vec![]
+        vec![Sub::new(
+            SubEventClause::User(UserEvent::SetCurrentOrganization(String::default())),
+            SubClause::Always,
+        )]
     }
 
     pub fn set_value(&mut self, val: Option<String>) {
@@ -39,17 +41,15 @@ impl Organization {
 
 impl Component<Msg, UserEvent> for Organization {
     fn on(&mut self, ev: Event<UserEvent>) -> Option<Msg> {
-        let cmd = match ev {
+        match ev {
             Event::Keyboard(KeyEvent {
                 code: Key::Enter, ..
-            }) => Cmd::None,
-            Event::User(UserEvent::SetCurrentOrganization(dep)) => {
-                self.set_value(Some(dep));
-                Cmd::None
+            }) => None,
+            Event::User(UserEvent::SetCurrentOrganization(org)) => {
+                self.set_value(Some(org.clone()));
+                Some(Msg::LoadEnvironments(org))
             }
-            _ => Cmd::None,
-        };
-        self.perform(cmd);
-        Some(Msg::None)
+            _ => None,
+        }
     }
 }

@@ -1004,6 +1004,7 @@ dependencies = [
  "jsonwebtoken",
  "reqwest",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1052,6 +1053,7 @@ dependencies = [
  "redox_api",
  "redox_core",
  "textwrap",
+ "tokio",
  "tracing",
  "tuirealm",
  "unicode-width 0.2.0",

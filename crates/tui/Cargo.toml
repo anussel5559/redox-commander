@@ -10,6 +10,7 @@ crossterm = {workspace = true, features = ["bracketed-paste", "windows", "events
 redox_api={workspace = true}
 redox_core={workspace = true}
 textwrap = "0.16.1"
+tokio = { workspace = true, features = ["rt-multi-thread"] }
 tracing = {workspace = true}
 tuirealm = "2.0.3"
 unicode-width = "0.2.0"
