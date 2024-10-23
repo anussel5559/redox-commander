@@ -3,7 +3,8 @@
 
 use anyhow::Context;
 use redox_core::util::{paths, ResultTraced};
-use redox_tui::Tui;
+//use redox_tui::Tui;
+use redox_tui2::Tui as Tui2;
 use std::{
     fs::{self, File, OpenOptions},
     io,
@@ -18,7 +19,7 @@ use tracing_subscriber::{
 async fn main() -> anyhow::Result<ExitCode> {
     initialize_tracing(false);
     info!("Starting Redox Commander");
-    Tui::start(None).await?;
+    Tui2::start();
     Ok(ExitCode::SUCCESS)
 }
 
