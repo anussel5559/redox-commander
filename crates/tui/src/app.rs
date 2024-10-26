@@ -39,21 +39,55 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let mut should_exit = hooks.use_state(|| false);
     let mut events = hooks.use_state::<Vec<ReportedEvent>, _>(|| vec![]);
     let mut env_loading = hooks.use_state(|| false);
+    let mut event_reporter_focus = hooks.use_state(|| false);
+    let cur_page = hooks.use_state(|| CurrentPage::Primary);
 
     let mut app_context = hooks.use_state(|| AppContext::default());
+
+    let mut report_event = move |event: ReportedEvent| {
+        let mut updated_events = events.read().clone();
+        updated_events.insert(0, event);
+        events.set(updated_events);
+    };
 
     let mut load_config = hooks.use_async_handler(move |_| async move {
         let mut current_context = app_context.read().clone();
         current_context.load_configuration().await;
         app_context.set(current_context);
+        report_event(ReportedEvent::new(
+            Level::INFO,
+            "Loaded configuration".into(),
+        ));
     });
 
-    if matches!(app_context.read().configuration, None) {
-        load_config(());
-    }
+    let mut update_environments = hooks.use_async_handler(move |_| async move {
+        env_loading.set(true);
+        let mut current_context = app_context.read().clone();
+        current_context.load_environments().await;
+        app_context.set(current_context);
+        report_event(ReportedEvent::new(
+            Level::INFO,
+            format!(
+                "Environments for org {} loaded",
+                app_context
+                    .read()
+                    .current_organization
+                    .map_or("none".to_string(), |o| o.to_string())
+            ),
+        ));
+        env_loading.set(false);
+    });
 
-    let mut event_reporter_focus = hooks.use_state(|| false);
-    let cur_page = hooks.use_state(|| CurrentPage::Primary);
+    let mut handle_org_change = move |org_id: Option<i32>| {
+        let mut new_context = app_context.read().clone();
+        new_context.current_organization = org_id;
+        new_context.current_environment = None;
+        app_context.set(new_context);
+        report_event(ReportedEvent::new(
+            Level::INFO,
+            "Organization updated".into(),
+        ));
+    };
 
     hooks.use_terminal_events({
         move |event| match event {
@@ -77,29 +111,9 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         system.exit();
     }
 
-    let mut report_event = move |event: ReportedEvent| {
-        let mut updated_events = events.read().clone();
-        updated_events.insert(0, event);
-        events.set(updated_events);
-    };
-
-    let mut update_environments = hooks.use_async_handler(move |_| async move {
-        env_loading.set(true);
-        let mut current_context = app_context.read().clone();
-        current_context.load_environments().await;
-        app_context.set(current_context);
-        report_event(ReportedEvent::new(
-            Level::INFO,
-            format!(
-                "Environments for org {} loaded",
-                app_context
-                    .read()
-                    .current_organization
-                    .map_or("none".to_string(), |o| o.to_string())
-            ),
-        ));
-        env_loading.set(false);
-    });
+    if matches!(app_context.read().configuration, None) {
+        load_config(());
+    }
 
     if app_context.read().current_organization.is_some()
         && app_context.read().current_environment.is_none()
@@ -107,17 +121,6 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     {
         update_environments(());
     }
-
-    let mut handle_org_change = move |org_id: Option<i32>| {
-        let mut new_context = app_context.read().clone();
-        new_context.current_organization = org_id;
-        new_context.current_environment = None;
-        app_context.set(new_context);
-        report_event(ReportedEvent::new(
-            Level::INFO,
-            "Organization updated".into(),
-        ));
-    };
 
     element! {
         Box(
