@@ -1,6 +1,8 @@
+use std::time::Duration;
+
 use iocraft::prelude::*;
 
-use crate::shared_components::box_with_title::BoxWithTitle;
+use crate::{app::AppContext, shared_components::box_with_title::BoxWithTitle};
 
 #[derive(Copy, Clone, PartialEq)]
 enum Selected {
@@ -10,9 +12,28 @@ enum Selected {
     Environment,
 }
 
+#[derive(Default, Props)]
+pub struct PrimaryPageProps {
+    pub change_organization: Handler<'static, Option<i32>>,
+}
+
 #[component]
-pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
+pub fn PrimaryPage(
+    mut hooks: Hooks,
+    props: &mut PrimaryPageProps,
+) -> impl Into<AnyElement<'static>> {
+    let cur_ctx = hooks.use_context::<AppContext>().clone();
+
+    let mut change_org_handler = props.change_organization.take();
+
     let selected_color = Color::Green;
+    let deployment_name = cur_ctx.current_deployment.map_or("none".into(), |d| d.name);
+    let current_org = cur_ctx
+        .current_organization
+        .map_or("none".into(), |d| d.to_string());
+    let current_env = cur_ctx
+        .current_environment
+        .map_or("none".into(), |d| format!("{} [{}]", d.name, d.id));
 
     let mut cur_selected = hooks.use_state(|| Selected::None);
 
@@ -39,12 +60,17 @@ pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                     KeyCode::Char('d') => choose_selected(Selected::Deployment),
                     KeyCode::Char('o') => choose_selected(Selected::Organization),
                     KeyCode::Char('e') => choose_selected(Selected::Environment),
-                    KeyCode::Enter => {},
+                    KeyCode::Enter => {}
                     _ => cur_selected.set(Selected::None),
                 }
             }
             _ => {}
         }
+    });
+
+    hooks.use_future(async move {
+        smol::Timer::after(Duration::from_millis(5000)).await;
+        change_org_handler(Some(122));
     });
 
     element! {
@@ -58,21 +84,21 @@ pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                 border_style: BorderStyle::Round,
                 border_color: match_selected(Selected::Deployment),
             ) {
-                Text(content: "none".to_string(), align: TextAlign::Center)
+                Text(content: deployment_name, align: TextAlign::Center)
             }
             BoxWithTitle(
                 title: "Organization (o)".to_string(),
                 border_style: BorderStyle::Round,
                 border_color: match_selected(Selected::Organization),
             ) {
-                Text(content: "none".to_string(), align: TextAlign::Center)
+                Text(content: current_org, align: TextAlign::Center)
             }
             BoxWithTitle(
                 title: "Environment (e)".to_string(),
                 border_style: BorderStyle::Round,
                 border_color: match_selected(Selected::Environment),
             ) {
-                Text(content: "none".to_string(), align: TextAlign::Center)
+                Text(content: current_env, align: TextAlign::Center)
             }
         }
     }

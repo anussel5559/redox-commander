@@ -5,14 +5,13 @@ use crate::{
     shared_components::{box_with_title::BoxWithTitle, time::Clock},
 };
 
+mod context;
+pub use context::AppContext;
+
 // pub struct ReportedEvent {
 //     pub time: SystemTime,
 //     pub message: String,
 //     pub level: Level,
-// }
-
-// pub enum AppContexts {
-//     Events(Vec<ReportedEvent>),
 // }
 
 #[derive(Copy, Clone)]
@@ -25,6 +24,18 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let (width, height) = hooks.use_terminal_size();
     let mut system = hooks.use_context_mut::<SystemContext>();
     let mut should_exit = hooks.use_state(|| false);
+
+    let mut app_context = hooks.use_state(|| AppContext::default());
+
+    let mut load_config = hooks.use_async_handler(move |_| async move {
+        let mut current_context = app_context.read().clone();
+        current_context.load_configuration().await;
+        app_context.set(current_context);
+    });
+
+    if matches!(app_context.read().configuration, None) {
+        load_config(());
+    }
 
     let mut event_reporter_focus = hooks.use_state(|| false);
     let cur_page = hooks.use_state(|| CurrentPage::Primary);
@@ -51,6 +62,13 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         system.exit();
     }
 
+    let mut handle_org_change = hooks.use_async_handler(move |org_id: Option<i32>| async move {
+        let mut new_context = app_context.read().clone();
+        new_context.current_organization = org_id;
+        new_context.load_environments().await;
+        app_context.set(new_context);
+    });
+
     element! {
         Box(
             // subtract one in case there's a scrollbar
@@ -66,13 +84,15 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
             ) {
                 Clock()
             }
-            Box(
-                width: 100pct,
-                flex_grow: 1.0
-            ){
-                #(match cur_page.get() {
-                    CurrentPage::Primary => element! { PrimaryPage() }.into_any(),
-                })
+            ContextProvider(value: Context::owned(app_context.read().clone())) {
+                Box(
+                    width: 100pct,
+                    flex_grow: 1.0
+                ){
+                    #(match cur_page.get() {
+                        CurrentPage::Primary => element! { PrimaryPage(change_organization: move |org| handle_org_change(org)) }.into_any(),
+                    })
+                }
             }
             EventReporter(has_focus: event_reporter_focus.get())
         }

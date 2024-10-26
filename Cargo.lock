@@ -1346,6 +1346,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1408,7 +1409,10 @@ dependencies = [
  "anyhow",
  "chrono",
  "iocraft",
+ "redox_api",
+ "redox_core",
  "smol",
+ "tokio",
  "tracing",
 ]
 
