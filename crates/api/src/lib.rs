@@ -58,26 +58,6 @@ impl Debug for RedoxRequestClient {
     }
 }
 
-impl PartialEq for RedoxRequestClient {
-    fn eq(&self, other: &Self) -> bool {
-        self.base_url == other.base_url
-    }
-}
-
-impl Eq for RedoxRequestClient {}
-
-impl PartialOrd for RedoxRequestClient {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for RedoxRequestClient {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.base_url.cmp(&other.base_url)
-    }
-}
-
 impl RedoxRequestClient {
     pub fn new(
         base_url: &String,

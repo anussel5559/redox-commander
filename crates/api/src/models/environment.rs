@@ -3,19 +3,19 @@ use serde::Deserialize;
 
 use super::{RedoxApiResource, RequestParts};
 
-#[derive(Debug, Clone, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub enum EnvironmentFlag {
     Production,
     Staging,
     Development,
 }
 
-#[derive(Debug, Clone, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct OrgObj {
     pub id: i32,
 }
 
-#[derive(Debug, Clone, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Environment {
     pub name: String,
     #[serde(rename = "environmentFlag")]

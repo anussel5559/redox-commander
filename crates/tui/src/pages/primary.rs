@@ -36,7 +36,6 @@ pub fn PrimaryPage(
         .map_or("none".into(), |d| format!("{} [{}]", d.name, d.id));
 
     let mut cur_selected = hooks.use_state(|| Selected::None);
-
     let match_selected = |selected: Selected| {
         if cur_selected.get() == selected {
             selected_color
@@ -44,7 +43,6 @@ pub fn PrimaryPage(
             Color::Reset
         }
     };
-
     let mut choose_selected = move |selected: Selected| {
         if cur_selected.get() == selected {
             cur_selected.set(Selected::None)
@@ -93,12 +91,14 @@ pub fn PrimaryPage(
             ) {
                 Text(content: current_org, align: TextAlign::Center)
             }
-            BoxWithTitle(
-                title: "Environment (e)".to_string(),
-                border_style: BorderStyle::Round,
-                border_color: match_selected(Selected::Environment),
-            ) {
-                Text(content: current_env, align: TextAlign::Center)
+            Box(min_width: 70) {
+                BoxWithTitle(
+                    title: "Environment (e)".to_string(),
+                    border_style: BorderStyle::Round,
+                    border_color: match_selected(Selected::Environment),
+                ) {
+                    Text(content: current_env, align: TextAlign::Center)
+                }
             }
         }
     }
