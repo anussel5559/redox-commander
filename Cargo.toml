@@ -15,13 +15,11 @@ members = ["crates/*"]
 [workspace.dependencies]
 anyhow = "1.0.89"
 chrono = "0.4.38"
-crossterm = {version = "0.28.1", default-features = false, features = ["events"]}
 dirs = "5.0.1"
 itertools = "0.13.0"
-tokio = { version = "1.40.0", default-features = false }
+tokio = { version = "1.40.0", default-feature = false}
 redox_api = { path = "./crates/api", version = "0.1.0" }
 redox_tui = { path = "./crates/tui", version = "0.1.0" }
-redox_tui2 = { path = "./crates/tui2", version = "0.1.0" }
 redox_core = { path = "./crates/core", version = "0.1.0" }
 serde = {version = "1.0.210", default-features = false}
 serde_json = {version = "1.0.128", default-features = false}
@@ -32,7 +30,6 @@ tracing = "0.1.40"
 anyhow = { workspace = true }
 redox_api = { workspace = true }
 redox_tui = { workspace = true }
-redox_tui2 = { workspace = true }
 redox_core = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing = {workspace = true}

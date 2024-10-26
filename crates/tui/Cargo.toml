@@ -6,11 +6,9 @@ edition = "2021"
 [dependencies]
 anyhow = {workspace = true}
 chrono = { workspace = true }
-crossterm = {workspace = true, features = ["bracketed-paste", "windows", "events", "event-stream"]}
+iocraft = "0.3.2"
 redox_api={workspace = true}
 redox_core={workspace = true}
-textwrap = "0.16.1"
-tokio = { workspace = true, features = ["rt-multi-thread"] }
+smol = "2.0.1"
+tokio = { workspace = true }
 tracing = {workspace = true}
-tuirealm = "2.0.3"
-unicode-width = "0.2.0"
