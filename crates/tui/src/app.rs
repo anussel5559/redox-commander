@@ -78,16 +78,16 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         env_loading.set(false);
     });
 
-    let mut handle_org_change = move |org_id: Option<i32>| {
-        let mut new_context = app_context.read().clone();
-        new_context.current_organization = org_id;
-        new_context.current_environment = None;
-        app_context.set(new_context);
-        report_event(ReportedEvent::new(
-            Level::INFO,
-            "Organization updated".into(),
-        ));
-    };
+    // let mut handle_org_change = move |org_id: Option<i32>| {
+    //     let mut new_context = app_context.read().clone();
+    //     new_context.current_organization = org_id;
+    //     new_context.env_ctx.current_environment = None;
+    //     app_context.set(new_context);
+    //     report_event(ReportedEvent::new(
+    //         Level::INFO,
+    //         "Organization updated".into(),
+    //     ));
+    // };
 
     hooks.use_terminal_events({
         move |event| match event {
@@ -116,7 +116,7 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     }
 
     if app_context.read().current_organization.is_some()
-        && app_context.read().current_environment.is_none()
+        && app_context.read().env_ctx.current_environment.is_none()
         && !env_loading.get()
     {
         update_environments(());

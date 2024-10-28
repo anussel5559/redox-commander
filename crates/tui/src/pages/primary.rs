@@ -14,13 +14,14 @@ enum Selected {
 pub fn PrimaryPage(
     mut hooks: Hooks
 ) -> impl Into<AnyElement<'static>> {
-    let cur_ctx = hooks.use_context::<AppContext>().clone();
+    let mut cur_ctx = hooks.use_context::<AppContext>().clone();
 
-    let deployment_name = cur_ctx.current_deployment.map_or("none".into(), |d| d.name);
+    let deployment_name = cur_ctx.current_deployment.clone().map_or("none".into(), |d| d.name);
     let current_org = cur_ctx
         .current_organization
         .map_or("none".into(), |d| d.to_string());
     let current_env = cur_ctx
+        .env_ctx.clone()
         .current_environment
         .map_or("none".into(), |d| format!("{} [{}]", d.name, d.id));
 
@@ -54,6 +55,11 @@ pub fn PrimaryPage(
             }
             _ => {}
         }
+    });
+
+    hooks.use_future(async move {
+        smol::Timer::after(std::time::Duration::from_secs(5)).await;
+        cur_ctx.current_organization = Some(122);
     });
 
     element! {

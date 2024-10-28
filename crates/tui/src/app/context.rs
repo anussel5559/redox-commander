@@ -11,12 +11,17 @@ use redox_core::{Configuration, ConfigurationFile, Deployment};
 use tokio::spawn;
 
 #[derive(Default, Clone)]
+pub struct EnvironmentContext {
+    pub environments: Vec<Environment>,
+    pub current_environment: Option<Environment>,
+}
+
+#[derive(Default, Clone)]
 pub struct AppContext {
     pub configuration: Option<Configuration>,
     pub current_deployment: Option<Deployment>,
     pub current_organization: Option<i32>,
-    pub current_environment: Option<Environment>,
-    pub environments: Vec<Environment>,
+    pub env_ctx: EnvironmentContext,
     pub api_client: Option<Arc<Mutex<RedoxRequestClient>>>,
 }
 
@@ -80,15 +85,16 @@ impl AppContext {
                     _ => vec![],
                 })
                 .unwrap_or(vec![]);
-            self.environments = environments;
+            self.env_ctx.environments = environments;
 
             // if the environment list has a Development flag one, set that to current
             if let Some(env) = self
+                .env_ctx
                 .environments
                 .iter()
                 .find(|e| e.environment_flag == EnvironmentFlag::Development)
             {
-                self.current_environment = Some(env.clone());
+                self.env_ctx.current_environment = Some(env.clone());
             }
         }
     }
