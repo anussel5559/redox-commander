@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use iocraft::prelude::*;
 
 use crate::{app::AppContext, shared_components::box_with_title::BoxWithTitle};
@@ -12,21 +10,12 @@ enum Selected {
     Environment,
 }
 
-#[derive(Default, Props)]
-pub struct PrimaryPageProps {
-    pub change_organization: Handler<'static, Option<i32>>,
-}
-
 #[component]
 pub fn PrimaryPage(
-    mut hooks: Hooks,
-    props: &mut PrimaryPageProps,
+    mut hooks: Hooks
 ) -> impl Into<AnyElement<'static>> {
     let cur_ctx = hooks.use_context::<AppContext>().clone();
 
-    let mut change_org_handler = props.change_organization.take();
-
-    let selected_color = Color::Green;
     let deployment_name = cur_ctx.current_deployment.map_or("none".into(), |d| d.name);
     let current_org = cur_ctx
         .current_organization
@@ -35,6 +24,7 @@ pub fn PrimaryPage(
         .current_environment
         .map_or("none".into(), |d| format!("{} [{}]", d.name, d.id));
 
+    let selected_color = Color::DarkBlue;
     let mut cur_selected = hooks.use_state(|| Selected::None);
     let match_selected = |selected: Selected| {
         if cur_selected.get() == selected {
@@ -66,32 +56,32 @@ pub fn PrimaryPage(
         }
     });
 
-    hooks.use_future(async move {
-        smol::Timer::after(Duration::from_millis(5000)).await;
-        change_org_handler(Some(122));
-    });
-
     element! {
         Box(
             width: 100pct,
             height: 3,
             flex_direction: FlexDirection::Row,
+            margin_top: 0,
         ) {
-            BoxWithTitle(
-                title: "Deployment (d)".to_string(),
-                border_style: BorderStyle::Round,
-                border_color: match_selected(Selected::Deployment),
-            ) {
-                Text(content: deployment_name, align: TextAlign::Center)
+            Box(min_width: 16, flex_grow: 1.0) {
+                BoxWithTitle(
+                    title: "Deployment (d)".to_string(),
+                    border_style: BorderStyle::Round,
+                    border_color: match_selected(Selected::Deployment),
+                ) {
+                    Text(content: deployment_name, align: TextAlign::Center)
+                }
             }
-            BoxWithTitle(
-                title: "Organization (o)".to_string(),
-                border_style: BorderStyle::Round,
-                border_color: match_selected(Selected::Organization),
-            ) {
-                Text(content: current_org, align: TextAlign::Center)
+            Box(min_width: 18, flex_grow: 1.0) {
+                BoxWithTitle(
+                    title: "Organization (o)".to_string(),
+                    border_style: BorderStyle::Round,
+                    border_color: match_selected(Selected::Organization),
+                ) {
+                    Text(content: current_org, align: TextAlign::Center)
+                }
             }
-            Box(min_width: 70) {
+            Box(min_width: 50, flex_grow: 1.0) {
                 BoxWithTitle(
                     title: "Environment (e)".to_string(),
                     border_style: BorderStyle::Round,

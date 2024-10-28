@@ -1,4 +1,4 @@
-use iocraft::prelude::*;
+use iocraft::{element, ElementExt};
 use smol::block_on;
 
 mod app;

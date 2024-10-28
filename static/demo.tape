@@ -1,7 +1,7 @@
 Output "static/demo.gif"
 Set Width 1200
 Set Height 800
-Set FontSize 18
+Set FontSize 16
 Set Framerate 24
 Set Margin 0
 Set Padding 10

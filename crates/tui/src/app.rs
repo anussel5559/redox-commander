@@ -4,7 +4,7 @@ use tracing::Level;
 
 use crate::{
     pages::primary::PrimaryPage,
-    shared_components::{box_with_title::BoxWithTitle, time::Clock},
+    shared_components::box_with_title::BoxWithTitle,
 };
 
 mod context;
@@ -130,20 +130,13 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
             padding_top: 1,
             flex_direction: FlexDirection::Column,
         ) {
-            Box(
-                width: 100pct,
-                margin_right: 1,
-                justify_content: JustifyContent::End,
-            ) {
-                Clock()
-            }
             ContextProvider(value: Context::owned(app_context.read().clone())) {
                 Box(
                     width: 100pct,
                     flex_grow: 1.0
                 ){
                     #(match cur_page.get() {
-                        CurrentPage::Primary => element! { PrimaryPage(change_organization: move |org| handle_org_change(org)) }.into_any(),
+                        CurrentPage::Primary => element! { PrimaryPage }.into_any(),
                     })
                 }
             }
@@ -162,7 +155,7 @@ pub struct EventReporterProps {
 pub fn EventReporter(props: &mut EventReporterProps) -> impl Into<AnyElement<'static>> {
     let height: usize = if props.has_focus { 7 } else { 1 };
     let border_color = match props.has_focus {
-        true => Color::Red,
+        true => Color::DarkBlue,
         false => Color::Reset,
     };
 
