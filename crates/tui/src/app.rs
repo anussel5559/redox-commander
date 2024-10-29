@@ -2,10 +2,7 @@ use chrono::{DateTime, Local, Utc};
 use iocraft::prelude::*;
 use tracing::Level;
 
-use crate::{
-    pages::primary::PrimaryPage,
-    shared_components::box_with_title::BoxWithTitle,
-};
+use crate::{pages::primary::PrimaryPage, shared_components::box_with_title::BoxWithTitle};
 
 mod context;
 pub use context::AppContext;

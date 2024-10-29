@@ -12,17 +12,19 @@ enum Selected {
 }
 
 #[component]
-pub fn PrimaryPage(
-    mut hooks: Hooks
-) -> impl Into<AnyElement<'static>> {
+pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let mut cur_ctx = hooks.use_context::<AppContext>().clone();
 
-    let deployment_name = cur_ctx.current_deployment.clone().map_or("none".into(), |d| d.name);
+    let deployment_name = cur_ctx
+        .current_deployment
+        .clone()
+        .map_or("none".into(), |d| d.name);
     let current_org = cur_ctx
         .current_organization
         .map_or("none".into(), |d| d.to_string());
     let current_env = cur_ctx
-        .env_ctx.clone()
+        .env_ctx
+        .clone()
         .current_environment
         .map_or("none".into(), |d| format!("{} [{}]", d.name, d.id));
 
