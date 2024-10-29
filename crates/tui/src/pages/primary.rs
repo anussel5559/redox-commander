@@ -1,4 +1,5 @@
 use iocraft::prelude::*;
+use tokio::time::{sleep, Duration};
 
 use crate::{app::AppContext, shared_components::box_with_title::BoxWithTitle};
 
@@ -58,7 +59,7 @@ pub fn PrimaryPage(
     });
 
     hooks.use_future(async move {
-        smol::Timer::after(std::time::Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(5)).await;
         cur_ctx.current_organization = Some(122);
     });
 

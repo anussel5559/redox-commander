@@ -36,6 +36,7 @@ pub enum CurrentPage {
 pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let (width, height) = hooks.use_terminal_size();
     let mut system = hooks.use_context_mut::<SystemContext>();
+
     let mut should_exit = hooks.use_state(|| false);
     let mut events = hooks.use_state::<Vec<ReportedEvent>, _>(|| vec![]);
     let mut env_loading = hooks.use_state(|| false);

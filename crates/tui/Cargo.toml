@@ -9,6 +9,5 @@ chrono = { workspace = true }
 iocraft = "0.3.2"
 redox_api={workspace = true}
 redox_core={workspace = true}
-smol = "2.0.1"
 tokio = { workspace = true }
 tracing = {workspace = true}
