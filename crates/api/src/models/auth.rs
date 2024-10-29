@@ -15,9 +15,9 @@ pub struct AuthToken;
 
 impl AuthToken {
     pub async fn get_auth_token(
-        base_url: &String,
+        base_url: &str,
         client: &Client,
-        client_assertion: &String,
+        client_assertion: &str,
     ) -> Result<AuthTokenResponse, reqwest::Error> {
         let url = format!("{}/v2/auth/token", base_url);
 
@@ -27,7 +27,7 @@ impl AuthToken {
             "client_assertion_type".to_string(),
             "urn:ietf:params:oauth:client-assertion-type:jwt-bearer".to_string(),
         );
-        form_body.insert("client_assertion".to_string(), client_assertion.clone());
+        form_body.insert("client_assertion".to_string(), client_assertion.to_string());
 
         let response = client
             .post(&url)

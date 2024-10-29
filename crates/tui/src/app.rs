@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local, Utc};
 use iocraft::prelude::*;
-use tracing::{warn, Level};
+use tracing::Level;
 
 use crate::{pages::primary::PrimaryPage, shared_components::box_with_title::BoxWithTitle};
 

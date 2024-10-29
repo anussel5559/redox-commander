@@ -60,22 +60,22 @@ impl Debug for RedoxRequestClient {
 
 impl RedoxRequestClient {
     pub fn new(
-        base_url: &String,
-        auth_url: &Option<String>,
-        key_file: &String,
-        kid: &String,
-        client_id: &String,
+        base_url: &str,
+        auth_url: Option<&str>,
+        key_file: &str,
+        kid: &str,
+        client_id: &str,
     ) -> anyhow::Result<Self, anyhow::Error> {
         let key = Key::new(&key_file)?;
         let client = Client::builder().build()?;
         Ok(Self {
             client,
-            base_url: base_url.clone(),
-            auth_url: auth_url.clone(),
+            base_url: base_url.to_string(),
+            auth_url: auth_url.map(|s| s.to_string()),
             key,
             auth: Auth {
-                client_id: client_id.clone(),
-                kid: kid.clone(),
+                client_id: client_id.to_string(),
+                kid: kid.to_string(),
                 jwt: Arc::new(Mutex::new(None)),
             },
         })

@@ -51,7 +51,7 @@ impl AppContext {
         if let Some(deployment) = self.current_deployment.as_ref() {
             let new_auth_client = RedoxRequestClient::new(
                 &deployment.api_host,
-                &deployment.auth_host,
+                deployment.auth_host.as_deref(),
                 &deployment.auth.private_key_file,
                 &deployment.auth.kid,
                 &deployment.auth.client_id,

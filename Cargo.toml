@@ -17,7 +17,7 @@ anyhow = "1.0.89"
 chrono = "0.4.38"
 dirs = "5.0.1"
 itertools = "0.13.0"
-tokio = { version = "1.40.0", default-feature = false}
+tokio = { version = "1.40.0", default-features = false}
 redox_api = { path = "./crates/api", version = "0.1.0" }
 redox_tui = { path = "./crates/tui", version = "0.1.0" }
 redox_core = { path = "./crates/core", version = "0.1.0" }
