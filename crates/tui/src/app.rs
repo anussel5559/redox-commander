@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local, Utc};
 use iocraft::prelude::*;
-use tracing::Level;
+use tracing::{warn, Level};
 
 use crate::{pages::primary::PrimaryPage, shared_components::box_with_title::BoxWithTitle};
 
@@ -58,7 +58,7 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         ));
     });
 
-    let mut update_environments = hooks.use_async_handler(move |_| async move {
+    let mut update_environments = hooks.use_async_handler(move |_: ()| async move {
         env_loading.set(true);
         let mut current_context = app_context.read().clone();
         current_context.load_environments().await;
@@ -76,16 +76,16 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         env_loading.set(false);
     });
 
-    // let mut handle_org_change = move |org_id: Option<i32>| {
-    //     let mut new_context = app_context.read().clone();
-    //     new_context.current_organization = org_id;
-    //     new_context.env_ctx.current_environment = None;
-    //     app_context.set(new_context);
-    //     report_event(ReportedEvent::new(
-    //         Level::INFO,
-    //         "Organization updated".into(),
-    //     ));
-    // };
+    let mut handle_org_change = move |org_id: Option<i32>| {
+        let mut new_context = app_context.read().clone();
+        new_context.current_organization = org_id;
+        app_context.set(new_context);
+        report_event(ReportedEvent::new(
+            Level::INFO,
+            "Organization changed".into(),
+        ));
+        update_environments(());
+    };
 
     hooks.use_terminal_events({
         move |event| match event {
@@ -113,11 +113,18 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         load_config(());
     }
 
-    if app_context.read().current_organization.is_some()
-        && app_context.read().env_ctx.current_environment.is_none()
-        && !env_loading.get()
     {
-        update_environments(());
+        let cur_ctx = app_context.read().clone();
+        if cur_ctx.current_organization.is_none() {
+            // if our context has a deployment with a default_organization, set it
+            if let Some(org_id) = cur_ctx
+                .current_deployment
+                .as_ref()
+                .and_then(|d| d.default_org)
+            {
+                handle_org_change(Some(org_id));
+            }
+        }
     }
 
     element! {

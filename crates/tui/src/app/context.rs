@@ -37,13 +37,12 @@ impl AppContext {
         // If the configuration has a deployment with default, set the cur_deployment
         if let Some(deployment) = self
             .configuration
-            .clone()
-            .map_or(vec![], |c| c.deployments)
+            .as_ref()
+            .map_or(vec![], |c| c.deployments.clone())
             .iter()
             .find(|d| d.default == Some(true))
         {
             self.current_deployment = Some(deployment.clone());
-            self.current_organization = deployment.default_org;
             self.load_auth_client();
         }
     }

@@ -1,5 +1,4 @@
 use iocraft::prelude::*;
-use tokio::time::{sleep, Duration};
 
 use crate::{app::AppContext, shared_components::box_with_title::BoxWithTitle};
 
@@ -13,7 +12,7 @@ enum Selected {
 
 #[component]
 pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
-    let mut cur_ctx = hooks.use_context::<AppContext>().clone();
+    let cur_ctx = hooks.use_context::<AppContext>();
 
     let deployment_name = cur_ctx
         .current_deployment
@@ -58,11 +57,6 @@ pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
             }
             _ => {}
         }
-    });
-
-    hooks.use_future(async move {
-        sleep(Duration::from_secs(5)).await;
-        cur_ctx.current_organization = Some(122);
     });
 
     element! {
