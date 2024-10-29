@@ -10,7 +10,7 @@ pub struct Key {
 }
 
 impl Key {
-    pub fn new(file_path: &String) -> anyhow::Result<Self, anyhow::Error> {
+    pub fn new(file_path: &str) -> anyhow::Result<Self, anyhow::Error> {
         let mut file = File::open(file_path).map_err(|e| {
             anyhow!(format!(
                 "Failed to open file at path {}. Error: {:?}",

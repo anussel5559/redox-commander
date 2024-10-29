@@ -1,5 +1,8 @@
 use core::fmt;
-use std::fmt::{Debug, Formatter};
+use std::{
+    fmt::{Debug, Formatter},
+    sync::Arc,
+};
 
 use anyhow::anyhow;
 use chrono::Utc;
@@ -9,6 +12,7 @@ use models::{auth::AuthToken, RedoxApiResource, RequestType};
 use reqwest::{Client, Method, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::from_value;
+use tokio::sync::Mutex;
 
 pub mod key;
 pub mod models;
@@ -31,7 +35,7 @@ pub struct Jwt {
 pub struct Auth {
     client_id: String,
     kid: String,
-    jwt: Option<Jwt>,
+    jwt: Arc<Mutex<Option<Jwt>>>,
 }
 
 #[derive(Default, Clone)]
@@ -54,45 +58,25 @@ impl Debug for RedoxRequestClient {
     }
 }
 
-impl PartialEq for RedoxRequestClient {
-    fn eq(&self, other: &Self) -> bool {
-        self.base_url == other.base_url
-    }
-}
-
-impl Eq for RedoxRequestClient {}
-
-impl PartialOrd for RedoxRequestClient {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for RedoxRequestClient {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.base_url.cmp(&other.base_url)
-    }
-}
-
 impl RedoxRequestClient {
     pub fn new(
-        base_url: &String,
-        auth_url: &Option<String>,
-        key_file: &String,
-        kid: &String,
-        client_id: &String,
+        base_url: &str,
+        auth_url: Option<&str>,
+        key_file: &str,
+        kid: &str,
+        client_id: &str,
     ) -> anyhow::Result<Self, anyhow::Error> {
         let key = Key::new(&key_file)?;
         let client = Client::builder().build()?;
         Ok(Self {
             client,
-            base_url: base_url.clone(),
-            auth_url: auth_url.clone(),
+            base_url: base_url.to_string(),
+            auth_url: auth_url.map(|s| s.to_string()),
             key,
             auth: Auth {
-                client_id: client_id.clone(),
-                kid: kid.clone(),
-                jwt: None,
+                client_id: client_id.to_string(),
+                kid: kid.to_string(),
+                jwt: Arc::new(Mutex::new(None)),
             },
         })
     }
@@ -111,7 +95,7 @@ impl RedoxRequestClient {
         self.key.generate_signed_jwt(&header, &claims)
     }
 
-    async fn get_new_jwt(&mut self) -> anyhow::Result<(), anyhow::Error> {
+    async fn get_new_jwt(&self) -> anyhow::Result<Jwt, anyhow::Error> {
         let jwt = self.generate_client_assertion()?;
 
         let url = match &self.auth_url {
@@ -128,19 +112,22 @@ impl RedoxRequestClient {
                 ))
             })?;
 
-        self.auth.jwt = Some(Jwt {
+        Ok(Jwt {
             token: response_jwt.access_token,
-            expires_at: response_jwt.expires_in,
-        });
-        Ok(())
+            expires_at: Utc::now().timestamp() + response_jwt.expires_in - 10,
+        })
     }
 
     pub async fn refresh_jwt(&mut self) -> anyhow::Result<(), anyhow::Error> {
-        if self.auth.jwt.is_none()
-            || self.auth.jwt.as_ref().unwrap().expires_at < Utc::now().timestamp()
+        let mut current_jwt = self.auth.jwt.lock().await;
+
+        if current_jwt.is_none()
+            || current_jwt.as_ref().unwrap().expires_at < Utc::now().timestamp()
         {
-            self.get_new_jwt().await?;
+            let new_jwt = self.get_new_jwt().await?;
+            *current_jwt = Some(new_jwt);
         }
+
         Ok(())
     }
 
@@ -154,35 +141,36 @@ impl RedoxRequestClient {
     {
         self.refresh_jwt().await?;
 
-        let request_config = match request_type {
-            RequestType::List => resource.build_list_request(),
-        };
+        if let Some(jwt) = self.auth.jwt.lock().await.clone() {
+            let request_config = match request_type {
+                RequestType::List => resource.build_list_request(),
+            };
 
-        let request = match request_config.method {
-            Method::GET => self
-                .client
-                .get(&format!("{}/{}", self.base_url, request_config.path)),
-            _ => unimplemented!(),
-        };
+            let request = match request_config.method {
+                Method::GET => self
+                    .client
+                    .get(&format!("{}/{}", self.base_url, request_config.path)),
+                _ => unimplemented!(),
+            };
 
-        let response = request
-            .header(
-                "Authorization",
-                format!("Bearer {}", self.auth.jwt.as_ref().unwrap().token),
-            )
-            .send()
-            .await?;
+            let response = request
+                .header("Authorization", format!("Bearer {}", jwt.token))
+                .send()
+                .await?;
 
-        let response_body = response.json::<GeneralApiResponse>().await?;
+            let response_body = response.json::<GeneralApiResponse>().await?;
 
-        match request_type {
-            RequestType::List => {
-                let list = from_value(response_body.payload)?;
-                Ok(Response::List(list))
-            } // _ => {
-              //     let item = from_value(response_body.payload)?;
-              //     Ok(Response::Single(item))
-              // }
+            match request_type {
+                RequestType::List => {
+                    let list = from_value(response_body.payload)?;
+                    Ok(Response::List(list))
+                } // _ => {
+                  //     let item = from_value(response_body.payload)?;
+                  //     Ok(Response::Single(item))
+                  // }
+            }
+        } else {
+            Err(anyhow!("No JWT available."))
         }
     }
 }

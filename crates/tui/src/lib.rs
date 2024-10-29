@@ -1,135 +1,15 @@
-use std::{
-    io::{self, Stdout},
-    path::PathBuf,
-};
-
-use anyhow::Result;
+use iocraft::{element, ElementExt};
 
 mod app;
-mod components;
-mod mock_components;
 mod pages;
-mod reporting;
+mod shared_components;
 
-use app::model::Model;
-use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
-};
-use redox_api::{models::environment::Environment, RedoxRequestClient};
-use redox_core::{ConfigurationFile, Deployment};
-use reporting::ReportMessage;
-use tuirealm::{
-    ratatui::prelude::CrosstermBackend, ratatui::Terminal, AttrValue, Attribute, PollStrategy,
-};
+use app::App;
 
-#[derive(Debug, PartialEq)]
-pub enum Msg {
-    AppClose,
-    Clock,
-    SetActive(Id),
-    LoadConfiguration,
-    OpenModal,
-    LoadDeployment(Deployment),
-    FinalizeDeployment(Deployment, Option<RedoxRequestClient>),
-    LoadEnvironments(String),
-    FinalizeEnvironments(Option<Vec<Environment>>),
-    None,
-}
-
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
-pub enum Id {
-    Clock,
-    Label,
-    Listener,
-    Deployment,
-    Organization,
-    Environment,
-    Reporter,
-}
-
-#[derive(Debug, Eq, Clone, PartialOrd, Ord)]
-pub enum UserEvent {
-    ModalChanged(bool),
-    SetCurrentDeployment(Deployment),
-    DeploymentLoadFinished(Deployment, Option<RedoxRequestClient>),
-    SetCurrentOrganization(String),
-    EnvironmentsLoaded(Option<Vec<Environment>>),
-    SetCurrentEnvironment(Option<Environment>),
-    UpdateReporter(ReportMessage),
-    None,
-}
-
-impl PartialEq for UserEvent {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            _ => true,
-        }
-    }
-}
-
-pub struct Tui {}
+pub struct Tui;
 
 impl Tui {
-    pub async fn start(collection_path: Option<PathBuf>) -> Result<()> {
-        let configuration_path = ConfigurationFile::try_path(None, collection_path)?;
-        let term = initialize_terminal()?;
-
-        let mut model = Model::new(term, configuration_path);
-
-        while !model.quit {
-            // Tick
-            match model.app.tick(PollStrategy::Once) {
-                Err(err) => {
-                    assert!(model
-                        .app
-                        .attr(
-                            &Id::Label,
-                            Attribute::Text,
-                            AttrValue::String(format!("Application error: {}", err)),
-                        )
-                        .is_ok());
-                }
-                Ok(mut messages) => {
-                    if model.model_state.configuration.is_none() {
-                        messages.push(Msg::LoadConfiguration);
-                    }
-                    if messages.len() > 0 {
-                        // NOTE: redraw if at least one msg has been processed
-                        model.redraw = true;
-                        for msg in messages.into_iter() {
-                            let mut msg = Some(msg);
-                            while msg.is_some() {
-                                msg = model.update(msg).await;
-                            }
-                        }
-                    }
-                }
-            }
-            // Redraw
-            if model.redraw {
-                model.view();
-                model.redraw = false;
-            }
-        }
-        // Terminate terminal
-        restore_terminal()?;
-        Ok(())
+    pub async fn start() {
+        element!(App).fullscreen().await.unwrap()
     }
-}
-
-/// Set up terminal for TUI
-fn initialize_terminal() -> anyhow::Result<Terminal<CrosstermBackend<Stdout>>> {
-    crossterm::terminal::enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    Ok(Terminal::new(backend)?)
-}
-
-/// Return terminal to initial state
-fn restore_terminal() -> anyhow::Result<()> {
-    crossterm::terminal::disable_raw_mode()?;
-    crossterm::execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
-    Ok(())
 }

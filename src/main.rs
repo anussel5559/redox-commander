@@ -18,7 +18,7 @@ use tracing_subscriber::{
 async fn main() -> anyhow::Result<ExitCode> {
     initialize_tracing(false);
     info!("Starting Redox Commander");
-    Tui::start(None).await?;
+    Tui::start().await;
     Ok(ExitCode::SUCCESS)
 }
 
