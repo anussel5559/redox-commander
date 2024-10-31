@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local, Utc};
 use iocraft::prelude::*;
-use tracing::Level;
+use tracing::{info, Level};
 
 use crate::{pages::primary::PrimaryPage, shared_components::BoxWithTitle};
 
@@ -43,6 +43,7 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let mut app_context = hooks.use_state(|| AppContext::default());
 
     let mut report_event = move |event: ReportedEvent| {
+        info!("Event: {}", event.message);
         let mut updated_events = events.read().clone();
         updated_events.insert(0, event);
         events.set(updated_events);

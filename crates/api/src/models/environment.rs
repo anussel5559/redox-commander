@@ -29,6 +29,7 @@ pub struct EnvironmentList {
     pub environments: Vec<Environment>,
 }
 
+#[derive(Debug, Clone)]
 pub struct EnvironmentResource {
     org_id: i32,
 }

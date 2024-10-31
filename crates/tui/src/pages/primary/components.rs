@@ -33,7 +33,7 @@ pub fn ListResources(props: &mut ListResourcesProps) -> impl Into<AnyElement<'st
             is_selected: props.is_selected,
             title: &props.title,
         ) {
-            IoBox(flex_direction: FlexDirection::Column, margin_right: 2, margin_left: 2) {
+            IoBox(flex_direction: FlexDirection::Column, margin_right: 1, margin_left: 1) {
                 #(props.items.iter().map(|item| {
                     item_renderer(item)
                 }))

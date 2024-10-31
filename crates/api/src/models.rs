@@ -21,6 +21,7 @@ pub trait RedoxApiResource {
     fn build_list_request(&self) -> RequestParts<()>;
 }
 
+#[derive(Debug, Clone)]
 pub enum RequestType {
     List,
 }

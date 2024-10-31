@@ -43,6 +43,7 @@ fn initialize_tracing(console_output: bool) {
                 .with_target("rc", LevelFilter::INFO)
                 .with_target("redox_core", LevelFilter::INFO)
                 .with_target("redox_tui", LevelFilter::INFO)
+                .with_target("redox_api", LevelFilter::DEBUG)
         });
 
     let file_subscriber = log_file.map(|log_file| {

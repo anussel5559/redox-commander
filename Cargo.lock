@@ -993,6 +993,7 @@ dependencies = [
  "serde_json",
  "strum",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
