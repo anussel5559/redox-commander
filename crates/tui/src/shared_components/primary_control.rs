@@ -1,5 +1,8 @@
-use iocraft::prelude::{
-    component, element, AnyElement, BorderStyle, Color, Props, Text, TextAlign,
+use iocraft::{
+    prelude::{
+        component, element, AnyElement, BorderStyle, Box as IoBox, Color, Props, Text, TextAlign,
+    },
+    FlexDirection,
 };
 
 use crate::shared_components::BoxWithTitle;
@@ -47,25 +50,38 @@ pub fn SingleItem(props: &mut SingleItemProps) -> impl Into<AnyElement<'static>>
     }
 }
 
-// #[derive(Props)]
-// pub struct ListBoxProps<T> {
-//     pub is_selected: bool,
-//     pub title: String,
-//     pub items: Vec<T>,
-//     pub item_renderer: Box<dyn FnMut(&T) -> AnyElement<'static>>,
-// }
+#[derive(Props)]
+pub struct ListBoxProps<T> {
+    pub is_selected: bool,
+    pub title: String,
+    pub items: Vec<T>,
+    pub item_renderer: Box<dyn FnMut(&T) -> AnyElement<'static>>,
+}
 
-// #[component]
-// pub fn ListBox<T>(props: &mut ListBoxProps<T>) -> impl Into<AnyElement<'static>> {
-//     let item_renderer = props.item_renderer.as_mut();
-//     element! {
-//         PrimaryControl(
-//             is_selected: props.is_selected,
-//             title: &props.title,
-//         ) {
-//             #(props.items.iter().map(|item| {
-//                 item_renderer(item)
-//             }))
-//         }
-//     }
-// }
+impl<T> Default for ListBoxProps<T> {
+    fn default() -> Self {
+        Self {
+            is_selected: false,
+            title: String::new(),
+            items: Vec::new(),
+            item_renderer: Box::new(|_| element! { Text(content: "not implemented") }.into_any()),
+        }
+    }
+}
+
+#[component]
+pub fn ListBox<T: 'static>(props: &mut ListBoxProps<T>) -> impl Into<AnyElement<'static>> {
+    let item_renderer = props.item_renderer.as_mut();
+    element! {
+        PrimaryControl(
+            is_selected: props.is_selected,
+            title: &props.title,
+        ) {
+            IoBox(flex_direction: FlexDirection::Column, margin_right: 1, margin_left: 1) {
+                #(props.items.iter().map(|item| {
+                    item_renderer(item)
+                }))
+            }
+        }
+    }
+}

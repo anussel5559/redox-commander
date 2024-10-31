@@ -1,15 +1,15 @@
-use components::ListResources;
 use iocraft::{
     hooks::{UseContext, UseState, UseTerminalEvents},
-    prelude::{component, element, AnyElement, Box as IoBox},
+    prelude::{component, element, AnyElement, Box as IoBox, Text},
     FlexDirection, Hooks, KeyCode, KeyEvent, KeyEventKind, TerminalEvent,
 };
 use redox_api::models::EnvironmentResources;
 use strum::IntoEnumIterator;
 
-use crate::{app::AppContext, shared_components::SingleItem};
-
-mod components;
+use crate::{
+    app::AppContext,
+    shared_components::{ListBox, SingleItem},
+};
 
 #[derive(Copy, Clone, PartialEq)]
 enum Selected {
@@ -62,6 +62,9 @@ pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         }
     });
 
+    let resource_list_renderer: Box<dyn FnMut(&EnvironmentResources) -> AnyElement<'static>> =
+        Box::new(|item| element! { Text(content: item.to_string()) }.into_any());
+
     element! {
         IoBox(
             width: 100pct,
@@ -92,10 +95,11 @@ pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                 margin_top: 0
             ) {
                 IoBox(max_width: 35) {
-                    ListResources(
+                    ListBox<EnvironmentResources>(
                         is_selected: cur_selected.get() == Selected::ResourcesList,
                         title: "Resources (r)",
                         items: EnvironmentResources::iter().collect::<Vec<EnvironmentResources>>(),
+                        item_renderer: resource_list_renderer,
                     )
                 }
             }
