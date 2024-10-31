@@ -1,5 +1,6 @@
 use reqwest::Method;
 use serde::{de::DeserializeOwned, Serialize};
+use strum::{Display, EnumIter};
 
 pub mod auth;
 pub mod environment;
@@ -22,4 +23,19 @@ pub trait RedoxApiResource {
 
 pub enum RequestType {
     List,
+}
+
+#[derive(EnumIter, Display)]
+pub enum EnvironmentResources {
+    Alerts,
+    #[strum(to_string = "Auth credential")]
+    AuthCredential,
+    #[strum(to_string = "Config modifiers")]
+    ConfigModifiers,
+    Destination,
+    Filters,
+    Logs,
+    Sources,
+    #[strum(to_string = "Translation sets")]
+    TranslationSets,
 }

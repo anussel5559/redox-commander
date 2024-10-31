@@ -2,7 +2,7 @@ use chrono::{DateTime, Local, Utc};
 use iocraft::prelude::*;
 use tracing::Level;
 
-use crate::{pages::primary::PrimaryPage, shared_components::box_with_title::BoxWithTitle};
+use crate::{pages::primary::PrimaryPage, shared_components::BoxWithTitle};
 
 mod context;
 pub use context::AppContext;
@@ -36,8 +36,8 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
 
     let mut should_exit = hooks.use_state(|| false);
     let mut events = hooks.use_state::<Vec<ReportedEvent>, _>(|| vec![]);
-    let mut env_loading = hooks.use_state(|| false);
     let mut event_reporter_focus = hooks.use_state(|| false);
+
     let cur_page = hooks.use_state(|| CurrentPage::Primary);
 
     let mut app_context = hooks.use_state(|| AppContext::default());
@@ -59,7 +59,6 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     });
 
     let mut update_environments = hooks.use_async_handler(move |_: ()| async move {
-        env_loading.set(true);
         let mut current_context = app_context.read().clone();
         current_context.load_environments().await;
         app_context.set(current_context);
@@ -73,7 +72,6 @@ pub fn App(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                     .map_or("none".to_string(), |o| o.to_string())
             ),
         ));
-        env_loading.set(false);
     });
 
     let mut handle_org_change = move |org_id: Option<i32>| {
