@@ -13,6 +13,7 @@ use reqwest::{Client, Method, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::from_value;
 use tokio::sync::Mutex;
+use tracing::debug;
 
 pub mod key;
 pub mod models;
@@ -95,8 +96,10 @@ impl RedoxRequestClient {
         self.key.generate_signed_jwt(&header, &claims)
     }
 
+    #[tracing::instrument(level = "debug", skip(self))]
     async fn get_new_jwt(&self) -> anyhow::Result<Jwt, anyhow::Error> {
         let jwt = self.generate_client_assertion()?;
+        debug!("generated signed assertion");
 
         let url = match &self.auth_url {
             Some(url) => url,
@@ -111,19 +114,22 @@ impl RedoxRequestClient {
                     e.status().unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
                 ))
             })?;
-
+        debug!("retrieved auth token");
         Ok(Jwt {
             token: response_jwt.access_token,
             expires_at: Utc::now().timestamp() + response_jwt.expires_in - 10,
         })
     }
 
+    #[tracing::instrument(level = "debug", skip(self))]
     pub async fn refresh_jwt(&mut self) -> anyhow::Result<(), anyhow::Error> {
         let mut current_jwt = self.auth.jwt.lock().await;
+        debug!("unlocked jwt");
 
         if current_jwt.is_none()
             || current_jwt.as_ref().unwrap().expires_at < Utc::now().timestamp()
         {
+            debug!("refreshing jwt");
             let new_jwt = self.get_new_jwt().await?;
             *current_jwt = Some(new_jwt);
         }
@@ -131,13 +137,14 @@ impl RedoxRequestClient {
         Ok(())
     }
 
+    #[tracing::instrument(level = "debug", skip_all)]
     pub async fn make_request<R>(
         &mut self,
         request_type: RequestType,
         resource: R,
     ) -> anyhow::Result<Response<R>, anyhow::Error>
     where
-        R: RedoxApiResource,
+        R: RedoxApiResource + Debug,
     {
         self.refresh_jwt().await?;
 
@@ -146,19 +153,20 @@ impl RedoxRequestClient {
                 RequestType::List => resource.build_list_request(),
             };
 
+            let url = format!("{}/{}", self.base_url, request_config.path);
             let request = match request_config.method {
-                Method::GET => self
-                    .client
-                    .get(&format!("{}/{}", self.base_url, request_config.path)),
+                Method::GET => self.client.get(&url),
                 _ => unimplemented!(),
             };
 
+            debug!("sending request to: {}", url);
             let response = request
                 .header("Authorization", format!("Bearer {}", jwt.token))
                 .send()
                 .await?;
 
             let response_body = response.json::<GeneralApiResponse>().await?;
+            debug!("parsed raw response");
 
             match request_type {
                 RequestType::List => {

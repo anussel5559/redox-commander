@@ -24,6 +24,7 @@ redox_core = { path = "./crates/core", version = "0.1.0" }
 serde = {version = "1.0.210", default-features = false}
 serde_json = {version = "1.0.128", default-features = false}
 serde_yaml = {version = "0.9.34", default-features = false}
+strum = { version = "0.26.3", features = ["derive"] }
 tracing = "0.1.40"
 
 [dependencies]
