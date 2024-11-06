@@ -1,7 +1,7 @@
 use iocraft::{
     hooks::{UseContext, UseState, UseTerminalEvents},
     prelude::{component, element, AnyElement, Box as IoBox, Text},
-    FlexDirection, Hooks, KeyCode, KeyEvent, KeyEventKind, TerminalEvent,
+    Color, FlexDirection, Hooks, KeyCode, KeyEvent, KeyEventKind, TerminalEvent,
 };
 use redox_api::models::EnvironmentResources;
 use strum::IntoEnumIterator;
@@ -55,15 +55,27 @@ pub fn PrimaryPage(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                     KeyCode::Char('e') => choose_selected(Selected::Environment),
                     KeyCode::Char('r') => choose_selected(Selected::ResourcesList),
                     KeyCode::Enter => {}
-                    _ => cur_selected.set(Selected::None),
+                    _ => {}
                 }
             }
             _ => {}
         }
     });
 
-    let resource_list_renderer: Box<dyn FnMut(&EnvironmentResources) -> AnyElement<'static>> =
-        Box::new(|item| element! { Text(content: item.to_string()) }.into_any());
+    let resource_list_renderer: Box<dyn FnMut(&EnvironmentResources, bool) -> AnyElement<'static>> =
+        Box::new(|item, is_selected| {
+            let (color, background) = match is_selected {
+                true => (Color::Yellow, Color::DarkBlue),
+                false => (Color::Reset, Color::Reset),
+            };
+
+            element! {
+                IoBox(width: 100pct, background_color: Some(background)) {
+                    Text(content: item.to_string(), color: Some(color))
+                }
+            }
+            .into_any()
+        });
 
     element! {
         IoBox(

@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = {workspace = true}
 chrono = { workspace = true }
-iocraft = { git = "https://github.com/ccbrown/iocraft.git", rev = "8b6d0141eeb96fad92482f3ec3420b136812e09e" }
+iocraft = "0.4.0"
 redox_api={workspace = true}
 redox_core={workspace = true}
 strum = { workspace = true }
